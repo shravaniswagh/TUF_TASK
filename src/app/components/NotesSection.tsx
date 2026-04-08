@@ -61,13 +61,16 @@ export function NotesSection({
     <div className="h-full flex flex-col p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-slate-800">Notes</h2>
-        <button
-          onClick={() => setIsAdding(!isAdding)}
-          className="p-2 hover:bg-slate-200 rounded-full transition-colors"
-          aria-label="Add note"
-        >
-          <Plus className={`w-5 h-5 text-slate-600 transition-transform ${isAdding ? 'rotate-45' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400 italic hidden sm:inline-block">Add your pin to the motivation board</span>
+          <button
+            onClick={() => setIsAdding(!isAdding)}
+            className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+            aria-label="Add note"
+          >
+            <Plus className={`w-5 h-5 text-slate-600 transition-transform ${isAdding ? 'rotate-45' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Selected Date Range Info */}
