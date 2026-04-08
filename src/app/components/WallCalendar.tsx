@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarGrid } from './CalendarGrid';
 import { NotesSection } from './NotesSection';
-import exampleImage from '../hero.png';
+import exampleImage from '../preview.png';
 
 interface DateRange {
   start: Date | null;
@@ -181,10 +181,10 @@ export function WallCalendar({ onFullscreenToggle, isFullscreen = false }: WallC
 
                     {/* Month and Year - Positioned on blue section */}
                     <div className="absolute bottom-8 right-8 md:bottom-12 md:right-12 text-right z-10">
-                      <div className="text-white text-2xl md:text-4xl font-light tracking-wider mb-1" style={{ WebkitTextStroke: '1px rgba(0,0,0,0.3)', textShadow: '0px 2px 4px rgba(0,0,0,0.5)' }}>
+                      <div className="text-white text-2xl md:text-4xl font-light tracking-wider mb-1" style={{ WebkitTextStroke: '1px #333', textShadow: '0px 2px 4px rgba(0,0,0,0.8)' }}>
                         {currentDate.getFullYear()}
                       </div>
-                      <div className="text-white text-3xl md:text-5xl font-bold tracking-wide" style={{ WebkitTextStroke: '1px rgba(0,0,0,0.4)', textShadow: '0px 2px 6px rgba(0,0,0,0.6)' }}>
+                      <div className="text-white text-3xl md:text-5xl font-bold tracking-wide" style={{ WebkitTextStroke: '2px #333', textShadow: '0px 2px 6px rgba(0,0,0,0.8)' }}>
                         {currentDate.toLocaleDateString('en-US', { month: 'long' }).toUpperCase()}
                       </div>
                     </div>
