@@ -13,8 +13,13 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-color, rgba(0, 0, 0, 0.1));
+  background-color: transparent;
   border-radius: 20px;
+  transition: background-color 0.2s;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-color, rgba(0, 0, 0, 0.1));
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
@@ -24,5 +29,10 @@
 /* For Firefox */
 .custom-scrollbar {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s;
+}
+
+.custom-scrollbar:hover {
   scrollbar-color: var(--scrollbar-color, rgba(0, 0, 0, 0.1)) transparent;
 }

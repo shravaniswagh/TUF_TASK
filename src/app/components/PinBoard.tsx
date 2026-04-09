@@ -390,6 +390,18 @@ export function PinBoard() {
                 </div>
                 <span className="text-sm text-slate-700">Daily Tasks</span>
               </button>
+              <button
+                onClick={() => {
+                  setTheme(theme === 'dark' ? 'light' : 'dark');
+                  setShowAddMenu(false);
+                }}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+              >
+                <div className="w-6 h-6 rounded-full bg-slate-800 dark:bg-amber-100 flex items-center justify-center">
+                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-600" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
+                </div>
+                <span className="text-sm text-slate-700">Change Theme</span>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -405,15 +417,6 @@ export function PinBoard() {
             </motion.span>
           )}
           
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="w-14 h-14 bg-slate-800 dark:bg-amber-100 text-slate-50 dark:text-amber-600 rounded-full shadow-lg flex items-center justify-center hover:bg-slate-700 dark:hover:bg-amber-200 transition-colors"
-          >
-            {theme === 'dark' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
-          </motion.button>
-
           <motion.button
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.94 }}

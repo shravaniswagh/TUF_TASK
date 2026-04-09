@@ -19,10 +19,12 @@ interface Note {
 
 interface WallCalendarProps {
   onFullscreenToggle?: () => void;
+  onSidebarToggle?: (isCollapsed: boolean) => void;
   isFullscreen?: boolean;
   headerImage?: string;
   curveColor?: string;
   backgroundColor?: string;
+  zoomLevel?: number;
 }
 
 function darkenColor(hex: string, percent: number): string {
@@ -55,19 +57,54 @@ function darkenColor(hex: string, percent: number): string {
 
 export function WallCalendar({ 
   onFullscreenToggle, 
+  onSidebarToggle,
   isFullscreen = false,
   headerImage,
   curveColor = '#5B9BD5',
-  backgroundColor = '#ffffff'
+  backgroundColor = '#ffffff',
+  zoomLevel = 1
 }: WallCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedRange, setSelectedRange] = useState<DateRange>({ start: null, end: null });
   const [notes, setNotes] = useState<Note[]>([]);
   const [direction, setDirection] = useState(0);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [isResizing, setIsResizing] = useState(false);
 
   // Calculate scrollbar color
   const scrollbarColor = darkenColor(backgroundColor, 15);
+
+  // Resize handler
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const container = document.getElementById('calendar-main-container');
+      if (!container) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      const newWidth = containerRect.right - e.clientX;
+      
+      // Safety zone: calendar grid must be at least 350px
+      const minCalendarWidth = 350;
+      const maxSidebarWidth = containerRect.width - minCalendarWidth;
+      
+      if (newWidth > 200 && newWidth < maxSidebarWidth) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => setIsResizing(false);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
+
   // Use provided headerImage or default
   const displayImage = headerImage || exampleImage;
 
@@ -161,13 +198,14 @@ export function WallCalendar({
       <div className={`w-full h-full ${isFullscreen ? 'max-w-6xl' : ''}`}>
         {/* Calendar Container */}
           <motion.div
+          id="calendar-main-container"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ backgroundColor }}
-          className={`h-full overflow-hidden relative ${isFullscreen ? 'rounded-lg shadow-2xl' : ''}`}
+          style={{ backgroundColor, fontSize: `${zoomLevel * 100}%` }}
+          className={`h-full overflow-hidden relative flex flex-col ${isFullscreen ? 'rounded-lg shadow-2xl' : ''}`}
         >
           {/* Spiral Binding Effect */}
-          <div className="h-8 bg-gradient-to-b from-slate-200 to-slate-100 border-b border-slate-300 flex items-center justify-center gap-3 px-4">
+          <div className="h-8 bg-gradient-to-b from-slate-200 to-slate-100 border-b border-slate-300 flex items-center justify-center gap-3 px-4 shrink-0">
             {Array.from({ length: 20 }).map((_, i) => (
               <div
                 key={i}
@@ -180,9 +218,9 @@ export function WallCalendar({
           </div>
 
           {/* Main Calendar Content */}
-          <div className={`grid grid-cols-1 ${isSidebarCollapsed ? 'lg:grid-cols-1' : 'lg:grid-cols-3'} gap-0 h-full`}>
-            {/* Image and Month Section - Takes 2 columns if sidebar is open */}
-            <div className={`${isSidebarCollapsed ? 'lg:col-span-1' : 'lg:col-span-2'} relative flex flex-col`}>
+          <div className="flex flex-1 overflow-auto custom-scrollbar min-h-0">
+            {/* Image and Month Section */}
+            <div className="relative flex flex-col flex-1 min-w-0">
               <AnimatePresence initial={false} custom={direction} mode="wait">
                 <motion.div
                   key={currentMonthYear}
@@ -218,7 +256,7 @@ export function WallCalendar({
                       />
                     </svg>
 
-                    {/* Month and Year - Positioned on curve section */}
+                    {/* Month and Year */}
                     <div className="absolute bottom-6 right-8 md:bottom-8 md:right-12 text-right z-10 drop-shadow-2xl">
                       <div 
                         className="text-white text-2xl md:text-3xl font-light tracking-[0.3em] mb-1 opacity-90 drop-shadow-lg"
@@ -238,12 +276,13 @@ export function WallCalendar({
                     </div>
                   </div>
 
-                  {/* Calendar Grid - Takes remaining space */}
-                  <div className={`flex-1 ${isFullscreen ? 'p-6 md:p-8' : 'p-4 md:p-6'}`}>
+                  {/* Calendar Grid */}
+                  <div className={`flex-1 overflow-auto custom-scrollbar ${isFullscreen ? 'p-6 md:p-8' : 'p-4 md:p-6'}`}>
                     <CalendarGrid
                       currentDate={currentDate}
                       selectedRange={selectedRange}
                       onDateClick={handleDateClick}
+                      hideLegend={!isFullscreen && zoomLevel < 0.8}
                     />
                   </div>
                 </motion.div>
@@ -280,7 +319,11 @@ export function WallCalendar({
                     <ChevronRight className="w-5 h-5 text-slate-700" />
                   </button>
                   <button
-                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                    onClick={() => {
+                      const newState = !isSidebarCollapsed;
+                      setIsSidebarCollapsed(newState);
+                      onSidebarToggle?.(newState);
+                    }}
                     className="bg-white/80 hover:bg-white p-2 rounded-full shadow-lg transition-all hover:scale-110 ml-2"
                     aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                   >
@@ -294,11 +337,22 @@ export function WallCalendar({
               </div>
             </div>
 
-            {/* Notes Section - Takes 1 column */}
+            {/* Resize Handle */}
+            {!isSidebarCollapsed && (
+              <div
+                onMouseDown={() => setIsResizing(true)}
+                className={`w-1 cursor-col-resize hover:bg-blue-400/30 transition-colors shrink-0 ${isResizing ? 'bg-blue-400/50' : 'bg-slate-200/50'}`}
+              />
+            )}
+
+            {/* Notes Section */}
             {!isSidebarCollapsed && (
               <div 
-                className="lg:col-span-1 border-t lg:border-t-0 lg:border-l border-slate-200/50"
-                style={{ backgroundColor: `${backgroundColor}dd` }} // Slightly translucent
+                className="border-l border-slate-200/50 shrink-0 overflow-hidden"
+                style={{ 
+                  backgroundColor: `${backgroundColor}dd`,
+                  width: sidebarWidth,
+                }}
               >
                 <NotesSection
                   notes={currentMonthNotes}
@@ -314,4 +368,4 @@ export function WallCalendar({
       </div>
     </div>
   );
-}
+}

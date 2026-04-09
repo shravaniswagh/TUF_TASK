@@ -76,9 +76,20 @@ export function CalendarPin({ pin, onUpdate, onDelete, onDragStart, isDragging =
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [lockedRatio, setLockedRatio] = useState<number | boolean>(false);
+  const zoomLevel = pin.height / 600;
+
   return (
     <Resizable
-      lockAspectRatio={true}
+      lockAspectRatio={lockedRatio}
+      onResizeStart={(_e, direction) => {
+        const isCorner = ['topLeft', 'topRight', 'bottomLeft', 'bottomRight'].includes(direction);
+        if (isCorner) {
+          setLockedRatio(pin.width / pin.height);
+        } else {
+          setLockedRatio(false);
+        }
+      }}
       size={{ width: pin.width, height: pin.height }}
       onResizeStop={(_e, _direction, _ref, d) => {
         onUpdate(pin.id, {
@@ -86,8 +97,8 @@ export function CalendarPin({ pin, onUpdate, onDelete, onDragStart, isDragging =
           height: pin.height + d.height,
         });
       }}
-      minWidth={400}
-      minHeight={500}
+      minWidth={450}
+      minHeight={400} // Lowered to allow testing the legend collapse
       style={{
         position:   'absolute',
         left:       pin.x,
@@ -102,11 +113,23 @@ export function CalendarPin({ pin, onUpdate, onDelete, onDragStart, isDragging =
         topRight: true, bottomRight: true, bottomLeft: true, topLeft: true,
       }}
     >
+      {/* Calendar Pin Head - Move outside the overflow-hidden container */}
+      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-[60] pointer-events-none">
+        <div
+          className="w-5 h-5 rounded-full shadow-md"
+          style={{ backgroundColor: '#EF4444' }}
+        />
+        <div
+          className="w-1.5 h-2 rounded-b-sm mx-auto"
+          style={{ backgroundColor: '#EF4444', opacity: 0.6 }}
+        />
+      </div>
+
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className="w-full h-full flex flex-col rounded-xl shadow-sm relative"
+        className="w-full h-full flex flex-col rounded-xl shadow-sm relative overflow-hidden"
         onClick={handleBringToFront}
         style={{
           backgroundColor: theme === 'dark' ? '#ffffff' : (pin.color || '#ffffff'),
@@ -211,17 +234,6 @@ export function CalendarPin({ pin, onUpdate, onDelete, onDragStart, isDragging =
           )}
         </AnimatePresence>
 
-        {/* Calendar Pin Head */}
-        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-          <div
-            className="w-5 h-5 rounded-full shadow-md"
-            style={{ backgroundColor: '#EF4444' }}
-          />
-          <div
-            className="w-1.5 h-2 rounded-b-sm mx-auto"
-            style={{ backgroundColor: '#EF4444', opacity: 0.6 }}
-          />
-        </div>
 
         {/* Drag Handle Header */}
         <div
@@ -263,22 +275,24 @@ export function CalendarPin({ pin, onUpdate, onDelete, onDragStart, isDragging =
         </div>
 
         {/* Calendar Content */}
-        <div className="flex-1 overflow-hidden min-h-0 relative rounded-b-xl">
-          <div
-            className="absolute top-0 left-0 origin-top-left flex flex-col"
-            style={{
-              width: '480px',
-              height: '560px',
-              transform: `scale(${pin.width / 480})`,
+        <div className="flex-1 overflow-hidden min-h-0 relative rounded-b-xl bg-white">
+          <WallCalendar 
+            isFullscreen={false} 
+            onSidebarToggle={(isCollapsed) => {
+              const expansionAmount = 300;
+              if (!isCollapsed) {
+                // Expanding
+                onUpdate(pin.id, { width: pin.width + expansionAmount });
+              } else {
+                // Collapsing
+                onUpdate(pin.id, { width: Math.max(400, pin.width - expansionAmount) });
+              }
             }}
-          >
-            <WallCalendar 
-              isFullscreen={false} 
-              headerImage={pin.headerImage}
-              curveColor={pin.curveColor}
-              backgroundColor={theme === 'dark' ? '#ffffff' : (pin.color || '#ffffff')}
-            />
-          </div>
+            headerImage={pin.headerImage}
+            curveColor={pin.curveColor}
+            backgroundColor={theme === 'dark' ? '#ffffff' : (pin.color || '#ffffff')}
+            zoomLevel={zoomLevel}
+          />
         </div>
       </motion.div>
     </Resizable>

@@ -9,9 +9,10 @@ interface CalendarGridProps {
   currentDate: Date;
   selectedRange: DateRange;
   onDateClick: (date: Date) => void;
+  hideLegend?: boolean;
 }
 
-export function CalendarGrid({ currentDate, selectedRange, onDateClick }: CalendarGridProps) {
+export function CalendarGrid({ currentDate, selectedRange, onDateClick, hideLegend = false }: CalendarGridProps) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -149,20 +150,22 @@ export function CalendarGrid({ currentDate, selectedRange, onDateClick }: Calend
       </div>
 
       {/* Legend */}
-      <div className="mt-6 flex flex-wrap gap-4 text-xs text-slate-600">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-blue-500 rounded-md" />
-          <span>Selected</span>
+      {!hideLegend && (
+        <div className="mt-6 flex flex-wrap gap-4 text-xs text-slate-600">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-blue-500 rounded-md" />
+            <span>Selected</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-blue-100 rounded-md border border-blue-200" />
+            <span>In Range</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md border-2 border-blue-400" />
+            <span>Today</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-blue-100 rounded-md border border-blue-200" />
-          <span>In Range</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md border-2 border-blue-400" />
-          <span>Today</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
