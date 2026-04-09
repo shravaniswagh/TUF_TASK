@@ -634,7 +634,7 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
                   value={newTodo}
                   onChange={e => setNewTodo(e.target.value)}
                   placeholder="Add task..."
-                  className="flex-1 px-2 py-1.5 text-sm bg-white/50 border border-black/5 rounded-lg outline-none focus:ring-1 focus:ring-emerald-400/50"
+                  className="flex-1 px-2 py-1.5 text-sm bg-white/50 border border-black/5 rounded-lg outline-none focus:ring-1 focus:ring-emerald-400/50 text-slate-800"
                 />
                 <button type="submit" className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm">
                   <Plus className="w-4 h-4" />

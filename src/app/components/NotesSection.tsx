@@ -103,7 +103,7 @@ export function NotesSection({
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               placeholder={selectedRange.start ? "Add a note for this date range..." : "Select a date first, then add a note..."}
-              className="w-full p-3 border border-slate-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="w-full p-3 border border-slate-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-slate-800"
               rows={3}
               autoFocus
             />
