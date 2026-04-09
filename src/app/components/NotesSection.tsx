@@ -19,6 +19,7 @@ interface NotesSectionProps {
   selectedRange: DateRange;
   onAddNote: (text: string) => void;
   onDeleteNote: (id: string) => void;
+  scrollbarColor?: string;
 }
 
 export function NotesSection({
@@ -26,6 +27,7 @@ export function NotesSection({
   selectedRange,
   onAddNote,
   onDeleteNote,
+  scrollbarColor,
 }: NotesSectionProps) {
   const [noteText, setNoteText] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -129,7 +131,15 @@ export function NotesSection({
       </AnimatePresence>
 
       {/* Notes List */}
-      <div className="flex-1 overflow-y-auto space-y-3">
+      <div 
+        className="flex-1 overflow-y-auto space-y-3 custom-scrollbar"
+        style={{
+          // @ts-ignore
+          '--scrollbar-color': scrollbarColor,
+          // @ts-ignore
+          '--scrollbar-color-hover': scrollbarColor ? `${scrollbarColor}cc` : undefined,
+        }}
+      >
         <AnimatePresence>
           {notes.length === 0 ? (
             <motion.div

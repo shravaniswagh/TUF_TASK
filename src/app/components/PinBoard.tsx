@@ -1,18 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Pin, PinData } from './Pin';
 import { CalendarPin } from './CalendarPin';
-import { Plus, StickyNote, Calendar, Image as ImageIcon, CalendarDays } from 'lucide-react';
+import { Plus, StickyNote, Calendar, Image as ImageIcon, CalendarDays, Moon, Sun, ListTodo, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTheme } from 'next-themes';
 
 const TYPE_COLORS: Record<string, string[]> = {
-  note:      ['#FFFBEB', '#EFF6FF', '#FDF4FF', '#F0FDF4', '#FFF1F2', '#FEF3C7', '#DBEAFE', '#FAE8FF', '#DCFCE7', '#FFE4E6'],
-  image:     ['#F0FDF4', '#ECFDF5', '#F0F9FF'],
-  countdown: ['#FDF4FF', '#EFF6FF', '#FFF7ED'],
-  calendar:  ['#FFFFFF'],
+  note:        ['#FFFBEB', '#EFF6FF', '#FDF4FF', '#F0FDF4', '#FFF1F2', '#FEF3C7', '#DBEAFE', '#FAE8FF', '#DCFCE7', '#FFE4E6'],
+  image:       ['#F0FDF4', '#ECFDF5', '#F0F9FF'],
+  countdown:   ['#FDF4FF', '#EFF6FF', '#FFF7ED'],
+  calendar:    ['#FFFFFF'],
+  'todo':      ['#F0FDF4', '#FEF3C7', '#EFF6FF'],
+  'daily-tasks': ['#FDF4FF', '#FFFBEB', '#F1F5F9'],
 };
 
-function getColor(type: 'note' | 'image' | 'countdown' | 'calendar'): string {
-  const colors = TYPE_COLORS[type];
+function getColor(type: PinData['type']): string {
+  const colors = TYPE_COLORS[type] || ['#FFFFFF'];
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
@@ -85,6 +88,7 @@ export function PinBoard() {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const { theme, setTheme } = useTheme();
 
   /* ── Persistence & Initial Calendar ──────────────────────────────── */
   useEffect(() => {
@@ -216,13 +220,13 @@ export function PinBoard() {
   );
 
   /* ── Add pin ─────────────────────────────────────────────────────── */
-  const addPin = (type: 'image' | 'note' | 'countdown' | 'calendar') => {
+  const addPin = (type: PinData['type']) => {
     const boardRect = boardRef.current?.getBoundingClientRect();
     if (!boardRect) return;
 
-    // Calendar gets larger default size
-    const width  = type === 'calendar' ? 480 : type === 'countdown' ? 200 : 240;
-    const height = type === 'calendar' ? 600 : type === 'countdown' ? 170 : 210;
+    // Calendar & Lists get specialized default sizes
+    const width  = type === 'calendar' ? 480 : (type === 'todo' || type === 'daily-tasks') ? 280 : type === 'countdown' ? 200 : 240;
+    const height = type === 'calendar' ? 600 : (type === 'todo' || type === 'daily-tasks') ? 320 : type === 'countdown' ? 170 : 210;
 
     const calendarPins = pins.filter(p => p.type === 'calendar');
     const pos = scatterPosition(width, height, boardRect.width, boardRect.height, calendarPins);
@@ -267,9 +271,11 @@ export function PinBoard() {
         height:          '100%',
         userSelect:      dragging ? 'none' : 'auto',
         cursor:          dragging ? 'grabbing' : 'default',
-        // Subtle dot-grid canvas texture — no layout, pure background
-        backgroundImage: 'radial-gradient(circle, #cbd5e1 1px, transparent 1px)',
-        backgroundSize:  '28px 28px',
+        // Premium dot-grid that responds to dark theme
+        backgroundImage: theme === 'dark' 
+          ? 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px)'
+          : 'radial-gradient(circle, rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px)',
+        backgroundSize:  '36px 36px',
         // No overflow:hidden — pins are free; clipping removed
         overflow:        'hidden',
       }}
@@ -366,6 +372,24 @@ export function PinBoard() {
                 </div>
                 <span className="text-sm text-slate-700">Calendar</span>
               </button>
+              <button
+                onClick={() => addPin('todo')}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+              >
+                <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <ListTodo className="w-3.5 h-3.5 text-emerald-500" />
+                </div>
+                <span className="text-sm text-slate-700">To-Do List</span>
+              </button>
+              <button
+                onClick={() => addPin('daily-tasks')}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+              >
+                <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
+                  <ClipboardList className="w-3.5 h-3.5 text-rose-500" />
+                </div>
+                <span className="text-sm text-slate-700">Daily Tasks</span>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -375,11 +399,21 @@ export function PinBoard() {
             <motion.span 
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-sm font-medium text-slate-500 bg-white/80 px-4 py-2 rounded-full shadow-sm backdrop-blur-sm pointer-events-none"
+              className="text-sm font-medium text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-full shadow-sm backdrop-blur-sm pointer-events-none"
             >
               Add your pin to the motivation board
             </motion.span>
           )}
+          
+          <motion.button
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.94 }}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-14 h-14 bg-slate-800 dark:bg-amber-100 text-slate-50 dark:text-amber-600 rounded-full shadow-lg flex items-center justify-center hover:bg-slate-700 dark:hover:bg-amber-200 transition-colors"
+          >
+            {theme === 'dark' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+          </motion.button>
+
           <motion.button
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.94 }}

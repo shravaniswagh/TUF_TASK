@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Resizable } from 're-resizable';
-import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type } from 'lucide-react';
+import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export interface PinData {
   id: string;
-  type: 'image' | 'note' | 'countdown' | 'calendar';
+  type: 'image' | 'note' | 'countdown' | 'calendar' | 'todo' | 'daily-tasks';
   content: string;
   label?: string;
   x: number;
@@ -19,6 +19,8 @@ export interface PinData {
   rotation?: number; // subtle tilt in degrees
   fontFamily?: string;
   fontSize?: string;
+  headerImage?: string;
+  curveColor?: string;
 }
 
 interface PinProps {
@@ -29,11 +31,19 @@ interface PinProps {
   isDragging?: boolean;
 }
 
+interface TodoItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 const PIN_HEAD_COLORS: Record<string, string> = {
   note: '#F59E0B',
   image: '#10B981',
   countdown: '#6366F1',
   calendar: '#6366F1',
+  todo: '#10B981',
+  'daily-tasks': '#F43F5E',
 };
 
 const NOTE_COLORS = [
@@ -54,6 +64,32 @@ function calculateDaysRemaining(targetDateStr: string): number {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function darkenColor(hex: string, percent: number): string {
+  // Remove hash if present
+  hex = hex.replace('#', '');
+  
+  // Parse RGB
+  let r = parseInt(hex.substring(0, 2), 16);
+  let g = parseInt(hex.substring(2, 4), 16);
+  let b = parseInt(hex.substring(4, 6), 16);
+
+  // Darken
+  r = Math.floor(r * (1 - percent / 100));
+  g = Math.floor(g * (1 - percent / 100));
+  b = Math.floor(b * (1 - percent / 100));
+
+  // Ensure bounds
+  r = Math.min(255, Math.max(0, r));
+  g = Math.min(255, Math.max(0, g));
+  b = Math.min(255, Math.max(0, b));
+
+  const rr = r.toString(16).padStart(2, '0');
+  const gg = g.toString(16).padStart(2, '0');
+  const bb = b.toString(16).padStart(2, '0');
+
+  return `#${rr}${gg}${bb}`;
+}
+
 export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
@@ -64,6 +100,8 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
   const [showImageControls, setShowImageControls] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
+  const [newTodo, setNewTodo] = useState('');
+  const [dailyNotes, setDailyNotes] = useState<any[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,6 +125,50 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
       labelRef.current.focus();
     }
   }, [isEditingLabel]);
+
+  // Daily Tasks sync logic
+  useEffect(() => {
+    if (pin.type === 'daily-tasks') {
+      const updateDailyTasks = () => {
+        const saved = localStorage.getItem('calendar-notes');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Filter solely based on date range, ignoring monthYear string for better robustness
+            const filtered = parsed.filter((note: any) => {
+              const start = note.dateRange.start ? new Date(note.dateRange.start) : null;
+              const end = note.dateRange.end ? new Date(note.dateRange.end) : null;
+              
+              if (!start) return false;
+              
+              const startDate = new Date(start);
+              startDate.setHours(0, 0, 0, 0);
+              
+              if (!end) {
+                return startDate.getTime() === today.getTime();
+              }
+              
+              const endDate = new Date(end);
+              endDate.setHours(23, 59, 59, 999);
+              
+              return today >= startDate && today <= endDate;
+            });
+            setDailyNotes(filtered);
+          } catch (e) {
+            console.error('Failed to parse calendar notes', e);
+          }
+        }
+      };
+
+      updateDailyTasks();
+      // Polling for updates
+      const interval = setInterval(updateDailyTasks, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [pin.type]);
 
   const handleNoteSave = () => {
     onUpdate(pin.id, { content: noteContent });
@@ -127,6 +209,27 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
     onUpdate(pin.id, { zIndex: Date.now() });
   };
 
+  // Todo logic
+  const todos: TodoItem[] = pin.type === 'todo' ? (pin.content ? JSON.parse(pin.content) : []) : [];
+  
+  const handleAddTodo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTodo.trim()) return;
+    const updated = [...todos, { id: Date.now().toString(), text: newTodo.trim(), completed: false }];
+    onUpdate(pin.id, { content: JSON.stringify(updated) });
+    setNewTodo('');
+  };
+
+  const toggleTodo = (id: string) => {
+    const updated = todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+    onUpdate(pin.id, { content: JSON.stringify(updated) });
+  };
+
+  const deleteTodo = (id: string) => {
+    const updated = todos.filter(t => t.id !== id);
+    onUpdate(pin.id, { content: JSON.stringify(updated) });
+  };
+
   // Assign a stable random rotation on first render if not set
   useEffect(() => {
     if (pin.rotation === undefined) {
@@ -155,7 +258,12 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
       ? calculateDaysRemaining(pin.content)
       : 0;
 
-  const pinHeadColor = PIN_HEAD_COLORS[pin.type];
+  const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
+  
+  // Calculate scrollbar color based on background
+  const bgColor = pin.color || (pin.type === 'todo' ? '#F0FDF4' : pin.type === 'daily-tasks' ? '#FDF4FF' : '#FFFBEB');
+  const scrollColor = darkenColor(bgColor, 20);
+  const scrollColorHover = darkenColor(bgColor, 35);
 
   return (
     <Resizable
@@ -168,7 +276,6 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
       }}
       minWidth={160}
       minHeight={120}
-      // NO className — all positioning via style so inline wins unconditionally
       style={{
         position:   'absolute',
         left:       pin.x,
@@ -192,14 +299,18 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
         className="w-full h-full flex flex-col rounded-xl overflow-hidden"
         onClick={handleBringToFront}
         style={{
-          backgroundColor: pin.color || '#FFFBEB',
+          backgroundColor: bgColor,
           boxShadow: isDragging
             ? '0 20px 40px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.1)'
             : '0 2px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)',
           border: '1px solid rgba(0,0,0,0.05)',
+          // @ts-ignore
+          '--scrollbar-color': scrollColor,
+          // @ts-ignore
+          '--scrollbar-color-hover': scrollColorHover,
         }}
       >
-        {/* Pin Head (decorative pushpin circle) */}
+        {/* Pin Head */}
         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
           <div
             className="w-5 h-5 rounded-full shadow-md"
@@ -211,7 +322,7 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
           />
         </div>
 
-        {/* Pin Header — drag handle */}
+        {/* Pin Header */}
         <div
           onMouseDown={(e) => {
             e.preventDefault();
@@ -223,12 +334,12 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
         >
           <div className="flex items-center gap-1.5">
             <GripVertical className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs text-slate-500 capitalize tracking-wide">
-              {pin.type}
+            <span className="text-xs text-slate-500 capitalize tracking-wide font-medium">
+              {pin.type.replace('-', ' ')}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            {/* Font picker for notes and countdowns */}
+            {/* Font picker */}
             {(pin.type === 'note' || pin.type === 'countdown') && (
               <div className="relative">
                 <button
@@ -257,38 +368,18 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
                         className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
                       >
                         <option value="system-ui">Default</option>
-                        <option value="'Courier New', monospace" style={{ fontFamily: "'Courier New', monospace" }}>Typewriter</option>
-                        <option value="'Comic Sans MS', cursive" style={{ fontFamily: "'Comic Sans MS', cursive" }}>Playful</option>
-                        <option value="'Georgia', serif" style={{ fontFamily: "'Georgia', serif" }}>Elegant</option>
-                        <option value="'Brush Script MT', cursive" style={{ fontFamily: "'Brush Script MT', cursive" }}>Handwritten</option>
-                        <option value="'Impact', fantasy" style={{ fontFamily: "'Impact', fantasy" }}>Bold</option>
-                        <option value="'Trebuchet MS', sans-serif" style={{ fontFamily: "'Trebuchet MS', sans-serif" }}>Modern</option>
-                        <option value="'Times New Roman', serif" style={{ fontFamily: "'Times New Roman', serif" }}>Classic</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-slate-600 block mb-1 text-xs">Size:</label>
-                      <select
-                        value={pin.fontSize || '14px'}
-                        onChange={(e) => {
-                          onUpdate(pin.id, { fontSize: e.target.value });
-                        }}
-                        className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
-                      >
-                        <option value="11px">Extra Small</option>
-                        <option value="12px">Small</option>
-                        <option value="14px">Medium</option>
-                        <option value="16px">Large</option>
-                        <option value="18px">Extra Large</option>
-                        <option value="22px">Huge</option>
+                        <option value="'Courier New', monospace">Typewriter</option>
+                        <option value="'Comic Sans MS', cursive">Playful</option>
+                        <option value="'Georgia', serif">Elegant</option>
+                        <option value="'Brush Script MT', cursive">Handwritten</option>
                       </select>
                     </div>
                   </div>
                 )}
               </div>
             )}
-            {/* Color picker for notes */}
-            {pin.type === 'note' && (
+            {/* Color picker */}
+            {(pin.type === 'note' || pin.type === 'image' || pin.type === 'todo' || pin.type === 'daily-tasks') && (
               <div className="relative">
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
@@ -357,7 +448,7 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
                     }
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="w-full h-full resize-none outline-none bg-transparent text-slate-700 placeholder-slate-400 leading-relaxed"
+                  className="w-full h-full resize-none outline-none bg-transparent text-slate-700 placeholder-slate-400 leading-relaxed custom-scrollbar"
                   placeholder="Pin your motivation here..."
                   style={{
                     fontFamily: pin.fontFamily || 'system-ui',
@@ -367,7 +458,7 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
               ) : (
                 <div
                   onClick={() => setIsEditingNote(true)}
-                  className="w-full h-full cursor-text text-slate-700 whitespace-pre-wrap leading-relaxed overflow-auto"
+                  className="w-full h-full cursor-text text-slate-700 whitespace-pre-wrap leading-relaxed overflow-auto custom-scrollbar"
                   style={{
                     minHeight: 40,
                     fontFamily: pin.fontFamily || 'system-ui',
@@ -385,7 +476,7 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
           {pin.type === 'image' && (
             <div className="h-full flex flex-col gap-2">
               {pin.content ? (
-                <div className="relative flex-1 rounded-lg overflow-hidden bg-slate-100">
+                <div className="relative flex-1 rounded-lg overflow-hidden bg-white/50 border border-black/5">
                   <img
                     src={pin.content}
                     alt="Pin"
@@ -394,9 +485,6 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
                       height: '100%',
                       objectFit: pin.imageObjectFit || 'cover',
                       objectPosition: pin.imageObjectPosition || 'center',
-                    }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '';
                     }}
                   />
                   {showImageControls && (
@@ -421,30 +509,6 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
                           <option value="cover">Cover</option>
                           <option value="contain">Contain</option>
                           <option value="fill">Fill</option>
-                          <option value="none">None</option>
-                          <option value="scale-down">Scale Down</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-slate-600 block mb-1">Position:</label>
-                        <select
-                          value={pin.imageObjectPosition || 'center'}
-                          onChange={(e) =>
-                            onUpdate(pin.id, {
-                              imageObjectPosition: e.target.value,
-                            })
-                          }
-                          className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
-                        >
-                          <option value="center">Center</option>
-                          <option value="top">Top</option>
-                          <option value="bottom">Bottom</option>
-                          <option value="left">Left</option>
-                          <option value="right">Right</option>
-                          <option value="top left">Top Left</option>
-                          <option value="top right">Top Right</option>
-                          <option value="bottom left">Bottom Left</option>
-                          <option value="bottom right">Bottom Right</option>
                         </select>
                       </div>
                       <button
@@ -501,7 +565,7 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
               ) : (
                 <div
                   onClick={() => setShowImageInput(true)}
-                  className="flex-1 flex flex-col items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-slate-200 hover:border-slate-300 hover:bg-black/5 transition-all"
+                  className="flex-1 flex flex-col items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-slate-200 hover:border-slate-300 transition-all bg-white/20"
                 >
                   <ImageIcon className="w-6 h-6 text-slate-400" />
                   <span className="text-xs text-slate-500">Add image</span>
@@ -559,6 +623,81 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
                 onMouseDown={(e) => e.stopPropagation()}
                 className="mt-2 text-center text-xs text-slate-400 bg-transparent border border-slate-200 rounded-lg px-2 py-0.5 outline-none focus:border-slate-300 cursor-pointer"
               />
+            </div>
+          )}
+
+          {pin.type === 'todo' && (
+            <div className="h-full flex flex-col">
+              <form onSubmit={handleAddTodo} className="mb-3 flex gap-1.5" onMouseDown={e => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={newTodo}
+                  onChange={e => setNewTodo(e.target.value)}
+                  placeholder="Add task..."
+                  className="flex-1 px-2 py-1.5 text-sm bg-white/50 border border-black/5 rounded-lg outline-none focus:ring-1 focus:ring-emerald-400/50"
+                />
+                <button type="submit" className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm">
+                  <Plus className="w-4 h-4" />
+                </button>
+              </form>
+              <div className="flex-1 overflow-auto space-y-1.5 pr-1 custom-scrollbar">
+                {todos.map(todo => (
+                  <div key={todo.id} className="flex items-center gap-2 group bg-white/30 hover:bg-white/50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-black/5">
+                    <button
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={() => toggleTodo(todo.id)}
+                      className={`flex-shrink-0 transition-colors ${todo.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-400'}`}
+                    >
+                      {todo.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                    </button>
+                    <span className={`text-sm flex-1 leading-snug ${todo.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                      {todo.text}
+                    </span>
+                    <button
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={() => deleteTodo(todo.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-slate-300 hover:text-rose-500 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                {todos.length === 0 && (
+                  <div className="h-full flex flex-col items-center justify-center gap-2 opacity-30 mt-4">
+                    <ListTodo className="w-8 h-8" />
+                    <span className="text-xs font-medium">No tasks yet</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {pin.type === 'daily-tasks' && (
+            <div className="h-full flex flex-col">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                <ClipboardList className="w-3 h-3" />
+                Today's Calendar Sync
+              </div>
+              <div className="flex-1 overflow-auto space-y-2 pr-1 custom-scrollbar">
+                {dailyNotes.map(note => (
+                  <div key={note.id} className="bg-white/40 border-l-[3px] border-rose-400 p-2.5 rounded-r-lg shadow-sm">
+                    <div className="text-xs font-bold text-rose-500 mb-0.5">
+                      {note.dateRange.end ? 'Event/Range' : 'Reminder'}
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                      {note.text}
+                    </p>
+                  </div>
+                ))}
+                {dailyNotes.length === 0 && (
+                  <div className="h-full flex flex-col items-center justify-center gap-2 opacity-30 mt-8">
+                    <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center">
+                      <ClipboardList className="w-6 h-6 text-rose-400" />
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-tight">No tasks for today</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
