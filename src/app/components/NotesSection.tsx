@@ -20,6 +20,7 @@ interface NotesSectionProps {
   onAddNote: (text: string) => void;
   onDeleteNote: (id: string) => void;
   scrollbarColor?: string;
+  isDark: boolean;
 }
 
 export function NotesSection({
@@ -28,6 +29,7 @@ export function NotesSection({
   onAddNote,
   onDeleteNote,
   scrollbarColor,
+  isDark,
 }: NotesSectionProps) {
   const [noteText, setNoteText] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -62,7 +64,7 @@ export function NotesSection({
   return (
     <div className="h-full flex flex-col p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Notes</h2>
+        <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-800">Notes</h2>
         <button
           onClick={() => setIsAdding(!isAdding)}
           className="p-2 hover:bg-slate-200 rounded-full transition-colors"
@@ -151,8 +153,8 @@ export function NotesSection({
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Calendar className="w-8 h-8 text-slate-400" />
               </div>
-              <p className="text-slate-500 text-sm">No notes yet</p>
-              <p className="text-slate-400 text-xs mt-1">
+              <p className="text-slate-500 dark:text-slate-500 text-sm">No notes yet</p>
+              <p className="text-slate-400 dark:text-slate-400 text-xs mt-1">
                 Select a date and click + to add a note
               </p>
             </motion.div>
@@ -169,17 +171,22 @@ export function NotesSection({
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 text-xs text-slate-500">
                     <Calendar className="w-3 h-3" />
-                    <span>{formatDateRange(note.dateRange)}</span>
+                    <span className="dark:text-slate-500">{formatDateRange(note.dateRange)}</span>
                   </div>
                   <button
                     onClick={() => onDeleteNote(note.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-all ml-auto"
                     aria-label="Delete note"
                   >
                     <X className="w-4 h-4 text-red-500" />
                   </button>
                 </div>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{note.text}</p>
+                <div className="flex-1">
+                  <div className="text-xs text-blue-600 dark:text-blue-600 font-medium mb-0.5">
+                    {formatDateRange(note.dateRange)}
+                  </div>
+                  <p className="text-sm text-slate-700 dark:text-slate-700 leading-relaxed">{note.text}</p>
+                </div>
               </motion.div>
             ))
           )}

@@ -4,7 +4,6 @@ import { X, GripVertical, Palette, Settings, Image as ImageIcon, PaintBucket } f
 import { motion, AnimatePresence } from 'motion/react';
 import { WallCalendar } from './WallCalendar';
 import { PinData } from './Pin';
-import { useTheme } from 'next-themes';
 import { THEME_CONFIG } from '../theme-config';
 
 const CALENDAR_COLORS = [
@@ -31,13 +30,14 @@ interface CalendarPinProps {
   onDelete: (id: string) => void;
   onDragStart: (id: string, e: React.MouseEvent) => void;
   isDragging?: boolean;
+  isDark: boolean;
 }
 
-export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false }: CalendarPinProps) {
+export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark }: CalendarPinProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const { theme } = useTheme();
   const settingsRef = useRef<HTMLDivElement>(null);
+  const isDarkNow = isDark;
 
   const handleBringToFront = () => {
     onUpdate(pin.id, { zIndex: Date.now() });
@@ -134,7 +134,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
         className="w-full h-full flex flex-col rounded-xl shadow-sm relative overflow-hidden"
         onClick={handleBringToFront}
         style={{
-          backgroundColor: theme === 'dark' ? '#ffffff' : (pin.color || '#ffffff'),
+          backgroundColor: isDarkNow ? '#ffffff' : (pin.color || '#ffffff'),
           boxShadow: isDragging
             ? '0 24px 48px rgba(0,0,0,0.2), 0 12px 24px rgba(0,0,0,0.15)'
             : '0 4px 20px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
@@ -295,6 +295,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
             curveColor={pin.curveColor}
             backgroundColor={theme === 'dark' ? '#ffffff' : (pin.color || '#ffffff')}
             zoomLevel={zoomLevel}
+            isDark={isDarkNow}
           />
         </div>
       </motion.div>

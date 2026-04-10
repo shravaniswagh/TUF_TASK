@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useTheme } from 'next-themes';
 import { THEME_CONFIG } from '../theme-config';
 import { Resizable } from 're-resizable';
 import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Settings2, Sun, Moon } from 'lucide-react';
@@ -32,6 +31,7 @@ interface PinProps {
   onDelete: (id: string) => void;
   onDragStart: (id: string, e: React.MouseEvent) => void;
   isDragging?: boolean;
+  isDark: boolean;
 }
 
 interface TodoItem {
@@ -110,8 +110,7 @@ function darkenColor(hex: string, percent: number): string {
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false }: PinProps) {
-  const { resolvedTheme } = useTheme();
+export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [noteContent, setNoteContent] = useState(pin.content);
@@ -279,8 +278,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
   
   // Calculate scrollbar and background color based on theme
-  const isDark = resolvedTheme === 'dark';
-  
   // Default backgrounds that adapt to Dark Mode
   const defaultBg = isDark 
     ? (pin.type === 'todo' ? '#064e3b' : pin.type === 'daily-tasks' ? '#2e1065' : '#18181b')
@@ -431,7 +428,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 </button>
                 {showColorPicker && (
                   <div
-                    className={`${resolvedTheme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} absolute top-8 right-0 rounded-xl shadow-2xl border p-3 grid grid-cols-6 gap-2 z-50 animate-in fade-in zoom-in duration-150`}
+                    className={`${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} absolute top-8 right-0 rounded-xl shadow-2xl border p-3 grid grid-cols-6 gap-2 z-50 animate-in fade-in zoom-in duration-150`}
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.nativeEvent.stopImmediatePropagation();

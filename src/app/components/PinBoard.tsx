@@ -244,11 +244,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
       {hasLoaded && pins.map(pin => (
         pin.type === 'calendar' ? (
           <CalendarPin key={pin.id} pin={pin} boardId={boardId}
-            onUpdate={updatePin} onDelete={deletePin}
+            onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
             onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
         ) : (
           <Pin key={pin.id} pin={pin} boardId={boardId}
-            onUpdate={updatePin} onDelete={deletePin}
+            onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
             onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
         )
       ))}

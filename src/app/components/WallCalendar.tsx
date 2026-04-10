@@ -28,6 +28,7 @@ interface WallCalendarProps {
   curveColor?: string;
   backgroundColor?: string;
   zoomLevel?: number;
+  isDark: boolean;
 }
 
 function darkenColor(hex: string, percent: number): string {
@@ -66,7 +67,8 @@ export function WallCalendar({
   headerImage,
   curveColor = '#5B9BD5',
   backgroundColor = '#ffffff',
-  zoomLevel = 1
+  zoomLevel = 1,
+  isDark
 }: WallCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedRange, setSelectedRange] = useState<DateRange>({ start: null, end: null });
@@ -315,6 +317,7 @@ export function WallCalendar({
                       currentDate={currentDate}
                       selectedRange={selectedRange}
                       onDateClick={handleDateClick}
+                      isDark={isDark}
                       hideLegend={!isFullscreen && zoomLevel < 0.8}
                     />
                   </div>
@@ -393,6 +396,7 @@ export function WallCalendar({
                   onAddNote={handleAddNote}
                   onDeleteNote={handleDeleteNote}
                   scrollbarColor={scrollbarColor}
+                  isDark={isDark}
                 />
               </div>
             )}

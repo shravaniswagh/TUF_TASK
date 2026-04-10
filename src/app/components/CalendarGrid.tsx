@@ -10,9 +10,10 @@ interface CalendarGridProps {
   selectedRange: DateRange;
   onDateClick: (date: Date) => void;
   hideLegend?: boolean;
+  isDark: boolean;
 }
 
-export function CalendarGrid({ currentDate, selectedRange, onDateClick, hideLegend = false }: CalendarGridProps) {
+export function CalendarGrid({ currentDate, selectedRange, onDateClick, hideLegend = false, isDark }: CalendarGridProps) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
