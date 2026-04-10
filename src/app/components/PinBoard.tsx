@@ -93,7 +93,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
-  const { theme, setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [copied, setCopied] = useState(false);
 
   /* ── Persistence & Initial Calendar ──────────────────────────────── */
@@ -157,7 +157,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
       setDoc(doc(db, 'boards', boardId), { 
         pins: cleanedPins,
-        theme,
+        theme: theme || 'light',
         lastUpdated: new Date().toISOString()
       }, { merge: true })
         .catch(error => console.error('Failed to save pins to Firebase:', error));
@@ -302,7 +302,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
         cursor:          dragging ? 'grabbing' : 'default',
         // Layered background: wallpaper underneath, dot-grid on top
         backgroundImage: `
-          radial-gradient(circle, ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} 1.5px, transparent 1.5px)
+          radial-gradient(circle, ${resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} 1.5px, transparent 1.5px)
         `,
         backgroundSize:  '36px 36px',
         backgroundPosition: 'center',
@@ -433,14 +433,14 @@ export function PinBoard({ boardId }: { boardId: string }) {
               </button>
               <button
                 onClick={() => {
-                  const newTheme = (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? 'light' : 'dark';
+                  const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
                   setTheme(newTheme);
                   setShowAddMenu(false);
                 }}
                 className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
               >
                 <div className="w-6 h-6 rounded-full bg-slate-800 dark:bg-amber-100 flex items-center justify-center">
-                  {(theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? <Sun className="w-3.5 h-3.5 text-amber-600" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
+                  {resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-600" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
                 </div>
                 <span className="text-sm font-medium text-slate-700">Change Theme</span>
               </button>
