@@ -235,17 +235,14 @@ export function PinBoard({ boardId }: { boardId: string }) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className={`relative transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+      className={`w-full h-full relative transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
       style={{
         backgroundColor: currentBoardBg || baseBg,
         backgroundImage: `radial-gradient(circle, ${getAdaptiveDotColor(currentBoardBg, isDark)} 1.5px, transparent 1.5px)`,
         backgroundSize: '36px 36px',
         backgroundAttachment: 'fixed',
         transition: 'background-color 0.4s ease-out',
-        minWidth: '1920px',
-        minHeight: '1080px',
-        width: 'max-content',
-        height: 'max-content',
+        overflow: 'hidden',
       }}
     >
       {/* ── Minimalist Instructions ────────────────────────────────── */}
@@ -306,7 +303,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 12, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-56 mb-1 overflow-hidden"
+                  className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-56 mb-1 overflow-y-auto max-h-[min(520px,calc(100vh-140px))] custom-scrollbar"
                 >
                   <AnimatePresence mode="wait">
                     {menuView === 'main' ? (
