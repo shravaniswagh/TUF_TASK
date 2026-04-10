@@ -25,13 +25,14 @@ const CURVE_COLORS = [
 
 interface CalendarPinProps {
   pin: PinData;
+  boardId: string;
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
   onDragStart: (id: string, e: React.MouseEvent) => void;
   isDragging?: boolean;
 }
 
-export function CalendarPin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }: CalendarPinProps) {
+export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false }: CalendarPinProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const { theme } = useTheme();
@@ -277,6 +278,7 @@ export function CalendarPin({ pin, onUpdate, onDelete, onDragStart, isDragging =
         {/* Calendar Content */}
         <div className="flex-1 overflow-hidden min-h-0 relative rounded-b-xl bg-white">
           <WallCalendar 
+            boardId={boardId}
             isFullscreen={false} 
             onSidebarToggle={(isCollapsed) => {
               const expansionAmount = 300;

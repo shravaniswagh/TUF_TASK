@@ -6,6 +6,7 @@ import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { LogOut, Copy, Check } from 'lucide-react';
 
 export default function App() {
+  const [boardId, setBoardId] = useState<string>('default');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -16,10 +17,16 @@ export default function App() {
   const urlBoardId = urlParams.get("board");
 
   useEffect(() => {
+    // Initial board ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialBoard = urlParams.get('board') || 'default';
+    setBoardId(initialBoard);
+
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       if (u && !isWallpaperMode) {
-         // Force their UID into the URL so PinBoard and WallCalendar hooks catch it
+         // Force their UID into the URL
          window.history.replaceState({}, '', `/?board=${u.uid}&web=true`);
+         setBoardId(u.uid);
       }
       setUser(u);
       setLoading(false);
@@ -40,7 +47,7 @@ export default function App() {
   if (isWallpaperMode) {
     return (
       <div className="relative w-screen h-screen overflow-hidden bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-slate-50">
-        <PinBoard />
+        <PinBoard boardId={boardId} />
       </div>
     );
   }
@@ -88,8 +95,8 @@ export default function App() {
          </button>
       </div>
 
-      {/* PinBoard will inherently read the ?board=uid from the replaced URL! */}
-      <PinBoard />
+      {/* PinBoard will inherently read the boardId from props! */}
+      <PinBoard boardId={boardId} />
     </div>
   );
 }

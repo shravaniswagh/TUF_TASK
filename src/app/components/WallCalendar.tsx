@@ -20,6 +20,7 @@ interface Note {
 }
 
 interface WallCalendarProps {
+  boardId: string;
   onFullscreenToggle?: () => void;
   onSidebarToggle?: (isCollapsed: boolean) => void;
   isFullscreen?: boolean;
@@ -58,6 +59,7 @@ function darkenColor(hex: string, percent: number): string {
 }
 
 export function WallCalendar({ 
+  boardId,
   onFullscreenToggle, 
   onSidebarToggle,
   isFullscreen = false,
@@ -111,8 +113,28 @@ export function WallCalendar({
   // Use provided headerImage or default
   const displayImage = headerImage || exampleImage;
 
+  // Load notes from Firebase on mount
+  useEffect(() => {
+    const fetchNotes = async () => {
+      setHasLoaded(false);
+      try {
+        const docSnap = await getDoc(doc(db, 'notes', boardId));
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.notes) {
+            // Convert date strings back to Date objects
+            const notesWithDates = data.notes.map((note: any) => ({
+              ...note,
+              dateRange: {
+                start: note.dateRange.start ? new Date(note.dateRange.start) : null,
+                end: note.dateRange.end ? new Date(note.dateRange.end) : null,
+              },
+            }));
             setNotes(notesWithDates);
           }
+        } else {
+          setNotes([]); // Clear notes for a new board
         }
         setHasLoaded(true);
       } catch (error) {
@@ -122,16 +144,13 @@ export function WallCalendar({
     };
     
     fetchNotes();
-  }, []);
+  }, [boardId]);
 
   // Save notes to Firebase whenever they change (debounced)
   useEffect(() => {
     if (!hasLoaded) return;
     
     const saveTimer = setTimeout(() => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const boardId = urlParams.get('board') || 'default';
-      
       // Convert Dates to ISO strings for Firestore storage
       const serializedNotes = notes.map(note => ({
         ...note,
@@ -146,7 +165,7 @@ export function WallCalendar({
     }, 1000);
     
     return () => clearTimeout(saveTimer);
-  }, [notes, hasLoaded]);
+  }, [notes, hasLoaded, boardId]);
 
   const currentMonthYear = `${currentDate.toLocaleDateString('en-US', { month: 'long' })} ${currentDate.getFullYear()}`;
 

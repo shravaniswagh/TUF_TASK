@@ -85,7 +85,7 @@ function scatterPosition(
   };
 }
 
-export function PinBoard() {
+export function PinBoard({ boardId }: { boardId: string }) {
   const [pins, setPins] = useState<PinData[]>([]);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
@@ -96,9 +96,9 @@ export function PinBoard() {
   /* ── Persistence & Initial Calendar ──────────────────────────────── */
   useEffect(() => {
     const fetchPins = async () => {
+      setHasLoaded(false); // Reset loading when boardId changes
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const boardId = urlParams.get('board') || 'default';
+        const docSnap = await getDoc(doc(db, 'boards', boardId));
         let initialPins: PinData[] = [];
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -135,7 +135,7 @@ export function PinBoard() {
     };
     
     fetchPins();
-  }, [setTheme]);
+  }, [boardId, setTheme]);
 
   // Helper to remove undefined values which Firestore dislikes in arrays
   const cleanPinForFirestore = (pin: PinData) => {
@@ -150,9 +150,6 @@ export function PinBoard() {
     if (!hasLoaded) return;
     
     const saveTimer = setTimeout(() => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const boardId = urlParams.get('board') || 'default';
-      
       const cleanedPins = pins.map(cleanPinForFirestore);
 
       setDoc(doc(db, 'boards', boardId), { 
@@ -163,7 +160,7 @@ export function PinBoard() {
         .catch(error => console.error('Failed to save pins to Firebase:', error));
     }, 1000);
     return () => clearTimeout(saveTimer);
-  }, [pins, hasLoaded, theme]);
+  }, [pins, hasLoaded, theme, boardId]);
 
   /* ── Drag handling ───────────────────────────────────────────────── */
   useEffect(() => {
@@ -308,6 +305,7 @@ export function PinBoard() {
           <CalendarPin
             key={pin.id}
             pin={pin}
+            boardId={boardId}
             onUpdate={updatePin}
             onDelete={deletePin}
             onDragStart={handlePinDragStart}
@@ -317,7 +315,7 @@ export function PinBoard() {
           <Pin
             key={pin.id}
             pin={pin}
-            boardId={new URLSearchParams(window.location.search).get('board') || 'default'}
+            boardId={boardId}
             onUpdate={updatePin}
             onDelete={deletePin}
             onDragStart={handlePinDragStart}
