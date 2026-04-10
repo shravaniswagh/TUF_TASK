@@ -32,6 +32,7 @@ interface PinProps {
   onDragStart: (id: string, e: React.MouseEvent) => void;
   isDragging?: boolean;
   isDark: boolean;
+  isLocked: boolean;
 }
 
 interface TodoItem {
@@ -110,7 +111,7 @@ function darkenColor(hex: string, percent: number): string {
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark }: PinProps) {
+export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [noteContent, setNoteContent] = useState(pin.content);
@@ -291,6 +292,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
     <Resizable
       size={{ width: pin.width, height: pin.height }}
       onResizeStop={(_e, _direction, _ref, d) => {
+        if (isLocked) return;
         onUpdate(pin.id, {
           width:  pin.width  + d.width,
           height: pin.height + d.height,
@@ -298,6 +300,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
       }}
       minWidth={160}
       minHeight={120}
+      disable={isLocked ? { top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true } : {}}
       style={{
         position:   'absolute',
         left:       pin.x,
@@ -309,7 +312,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
           : `rotate(${pin.rotation ?? 0}deg)`,
         transition: isDragging ? 'none' : 'opacity 0.15s, transform 0.2s',
       }}
-      enable={{
+      enable={isLocked ? false : {
         top: true, right: true, bottom: true, left: true,
         topRight: true, bottomRight: true, bottomLeft: true, topLeft: true,
       }}
@@ -347,6 +350,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
         {/* Pin Header */}
         <div
           onMouseDown={(e) => {
+            if (isLocked) return;
             e.preventDefault();
             e.stopPropagation();
             onDragStart(pin.id, e);
@@ -458,13 +462,15 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 <ImageIcon className="w-3 h-3 text-slate-500" />
               </button>
             )}
-            <button
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={() => onDelete(pin.id)}
-              className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-            >
-              <X className="w-3 h-3 text-slate-500" />
-            </button>
+            {!isLocked && (
+              <button
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => onDelete(pin.id)}
+                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+              >
+                <X className="w-3 h-3 text-slate-500" />
+              </button>
+            )}
           </div>
         </div>
 

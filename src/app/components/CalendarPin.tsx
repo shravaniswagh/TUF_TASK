@@ -31,9 +31,10 @@ interface CalendarPinProps {
   onDragStart: (id: string, e: React.MouseEvent) => void;
   isDragging?: boolean;
   isDark: boolean;
+  isLocked: boolean;
 }
 
-export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark }: CalendarPinProps) {
+export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked }: CalendarPinProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -94,13 +95,15 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
       }}
       size={{ width: pin.width, height: pin.height }}
       onResizeStop={(_e, _direction, _ref, d) => {
+        if (isLocked) return;
         onUpdate(pin.id, {
           width:  pin.width  + d.width,
           height: pin.height + d.height,
         });
       }}
-      minWidth={450}
-      minHeight={400} // Lowered to allow testing the legend collapse
+      minWidth={400}
+      minHeight={300}
+      disable={isLocked ? { top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true } : {}}
       style={{
         position:   'absolute',
         left:       pin.x,
@@ -110,7 +113,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
         transform:  isDragging ? 'scale(1.02)' : 'scale(1)',
         transition: isDragging ? 'none' : 'opacity 0.15s, transform 0.2s',
       }}
-      enable={{
+      enable={isLocked ? false : {
         top: true, right: true, bottom: true, left: true,
         topRight: true, bottomRight: true, bottomLeft: true, topLeft: true,
       }}
@@ -240,6 +243,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
         {/* Drag Handle Header */}
         <div
           onMouseDown={(e) => {
+            if (isLocked) return;
             e.preventDefault();
             e.stopPropagation();
             onDragStart(pin.id, e);
@@ -255,24 +259,34 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
           </div>
           
           <div className="flex items-center gap-1">
-            <button
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={() => setShowSettings(!showSettings)}
-              className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${showSettings ? 'bg-slate-200 text-slate-800' : 'hover:bg-black/10 text-slate-500'}`}
-              title="Settings"
+            {!isLocked && (
+              <button
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => setShowSettings(!showSettings)}
+                className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${showSettings ? 'bg-slate-200 text-slate-800' : 'hover:bg-black/10 text-slate-500'}`}
+                title="Settings"
+              >
+                <Settings className="w-3 h-3" />
+              </button>
+            )}
+            {!isLocked && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(pin.id);
+                }}
+                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+                aria-label="Close calendar"
+              >
+                <X className="w-3 h-3 text-slate-500" />
+              </button>
+            )}
+            <div
+              className={`cursor-grab active:cursor-grabbing w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-slate-400 transition-colors ${isLocked ? 'pointer-events-none opacity-50' : ''}`}
+              onMouseDown={(e) => !isLocked && onDragStart(pin.id, e)}
             >
-              <Settings className="w-3 h-3" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(pin.id);
-              }}
-              className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-              aria-label="Close calendar"
-            >
-              <X className="w-3 h-3 text-slate-500" />
-            </button>
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
           </div>
         </div>
 

@@ -19,6 +19,9 @@ import {
   Check,
   ChevronLeft,
   Palette,
+  Lock,
+  Unlock,
+  Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
@@ -61,6 +64,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
+  const [isLocked, setIsLocked] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('board-locked') === 'true';
+    }
+    return false;
+  });
 
   // ── FAIL-SAFE MANUAL THEME ENGINE ────────────────────────────
   // We bypass next-themes for the board rendering to prevent OS interference.
@@ -118,6 +127,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
           if (data.theme && (data.theme === 'light' || data.theme === 'dark')) {
             setManualTheme(data.theme);
           }
+          if (data.isLocked !== undefined) {
+            setIsLocked(data.isLocked);
+          }
         }
         setHasLoaded(true);
       } catch (err) {
@@ -141,27 +153,29 @@ export function PinBoard({ boardId }: { boardId: string }) {
         pins: cleaned,
         boardBackgroundColor: boardColor,
         theme: manualTheme, // Save forced theme to database
+        isLocked: isLocked, // Save lock state to database
         lastUpdated: new Date().toISOString(),
       }, { merge: true }).catch(console.error);
     }, 1200);
     return () => clearTimeout(timer);
-  }, [pins, hasLoaded, boardId, boardColor, manualTheme]);
+  }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
   const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
+    if (isLocked) return;
     const pin = pins.find(p => p.id === id);
     if (!pin) return;
     setDragging({ id, offsetX: e.clientX - pin.x, offsetY: e.clientY - pin.y });
-  }, [pins]);
+  }, [pins, isLocked]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging) return;
+    if (!dragging || isLocked) return;
     setPins(prev => prev.map(p =>
       p.id === dragging.id
         ? { ...p, x: e.clientX - dragging.offsetX, y: e.clientY - dragging.offsetY }
         : p
     ));
-  }, [dragging]);
+  }, [dragging, isLocked]);
 
   const handleMouseUp = useCallback(() => setDragging(null), []);
 
@@ -245,16 +259,18 @@ export function PinBoard({ boardId }: { boardId: string }) {
         pin.type === 'calendar' ? (
           <CalendarPin key={pin.id} pin={pin} boardId={boardId}
             onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+            isLocked={isLocked}
             onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
         ) : (
           <Pin key={pin.id} pin={pin} boardId={boardId}
             onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+            isLocked={isLocked}
             onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
         )
       ))}
 
       {/* ── Actions Menu ───────────────────────────────────────────── */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
+      <div className="fixed bottom-16 right-6 z-[9999] flex flex-col items-end gap-3">
         <AnimatePresence>
           {showAddMenu && (
             <motion.div
@@ -275,9 +291,30 @@ export function PinBoard({ boardId }: { boardId: string }) {
                      <MenuBtn icon={<ClipboardList className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Daily Tasks" onClick={() => addPin('daily-tasks')} divider />
                      
                      <div className="border-t border-slate-100 dark:border-slate-800">
-                       <MenuBtn icon={copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />} bg="bg-blue-100 dark:bg-blue-900/40" label={copied ? 'Copied URL!' : 'Share Board'} onClick={handleCopyBoardUrl} />
-                       <MenuBtn icon={<Palette className="w-3.5 h-3.5 text-violet-500" />} bg="bg-violet-100 dark:bg-violet-900/40" label="Theme & Palette" onClick={() => setMenuView('theme')} divider />
-                       <MenuBtn icon={<LogOut className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Secure Sign Out" onClick={() => signOut(auth)} divider textClass="text-rose-500 font-bold" />
+                        <MenuBtn 
+                          icon={isLocked ? <Unlock className="w-3.5 h-3.5 text-orange-500" /> : <Lock className="w-3.5 h-3.5 text-slate-500" />} 
+                          bg="bg-slate-100 dark:bg-slate-800" 
+                          label={isLocked ? 'Unlock Board' : 'Lock Board'} 
+                          onClick={() => {
+                            setIsLocked(!isLocked);
+                            localStorage.setItem('board-locked', String(!isLocked));
+                          }} 
+                        />
+                        <MenuBtn 
+                          icon={<Trash2 className="w-3.5 h-3.5 text-rose-500" />} 
+                          bg="bg-rose-100 dark:bg-rose-900/40" 
+                          label="Clear Board" 
+                          onClick={() => {
+                            if (window.confirm("Are you sure you want to clear the entire board? This cannot be undone.")) {
+                              setPins([]);
+                              setShowAddMenu(false);
+                            }
+                          }} 
+                          divider
+                        />
+                        <MenuBtn icon={copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />} bg="bg-blue-100 dark:bg-blue-900/40" label={copied ? 'Copied URL!' : 'Share Board'} onClick={handleCopyBoardUrl} divider />
+                        <MenuBtn icon={<Palette className="w-3.5 h-3.5 text-violet-500" />} bg="bg-violet-100 dark:bg-violet-900/40" label="Theme & Palette" onClick={() => setMenuView('theme')} divider />
+                        <MenuBtn icon={<LogOut className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Secure Sign Out" onClick={() => signOut(auth)} divider textClass="text-rose-500 font-bold" />
                      </div>
                   </motion.div>
                 ) : (
@@ -337,11 +374,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
               if (!showAddMenu) setMenuView('main');
             }}
             style={{ backgroundColor: THEME_CONFIG.accent.primary, boxShadow: `0 8px 32px ${THEME_CONFIG.accent.glow}` }}
-            className="w-14 h-14 rounded-full text-white flex items-center justify-center relative shadow-lg"
+            className="w-12 h-12 rounded-full text-white flex items-center justify-center relative shadow-lg"
           >
             <span style={{ backgroundColor: THEME_CONFIG.accent.primary }} className="absolute inset-0 rounded-full animate-ping opacity-20 pointer-events-none" />
             <motion.div animate={{ rotate: showAddMenu ? 45 : 0 }} transition={{ duration: 0.2 }}>
-              <Plus className="w-7 h-7" />
+              <Plus className="w-6 h-6" />
             </motion.div>
           </motion.button>
         </div>
