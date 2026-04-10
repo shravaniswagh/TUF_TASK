@@ -45,7 +45,7 @@ export const THEME_CONFIG = {
   pinPalette: [
     '#FFFFFF', '#F8FAFC', '#F1F5F9', 
     '#FFFBEB', '#FEF3C7', '#FDF4FF', 
-    '#E2E8F0', '#94A3B8', '#475569', 
+    '#E2E8F0', '#475569', 
     '#334155', '#1E293B', '#0F172A', 
     '#020617', '#18181B', '#27272A', 
     '#3F3F46', '#52525B', '#71717A', 
