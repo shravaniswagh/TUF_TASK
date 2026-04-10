@@ -69,6 +69,7 @@ export function WallCalendar({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedRange, setSelectedRange] = useState<DateRange>({ start: null, end: null });
   const [notes, setNotes] = useState<Note[]>([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [direction, setDirection] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(300);
@@ -110,30 +111,13 @@ export function WallCalendar({
   // Use provided headerImage or default
   const displayImage = headerImage || exampleImage;
 
-  // Load notes from Firebase on mount
-  useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const boardId = urlParams.get('board') || 'default';
-        const docSnap = await getDoc(doc(db, 'notes', boardId));
-        
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.notes) {
-            // Convert date strings back to Date objects
-            const notesWithDates = data.notes.map((note: any) => ({
-              ...note,
-              dateRange: {
-                start: note.dateRange.start ? new Date(note.dateRange.start) : null,
-                end: note.dateRange.end ? new Date(note.dateRange.end) : null,
-              },
-            }));
             setNotes(notesWithDates);
           }
         }
+        setHasLoaded(true);
       } catch (error) {
         console.error('Failed to load notes:', error);
+        setHasLoaded(true);
       }
     };
     
@@ -141,12 +125,9 @@ export function WallCalendar({
   }, []);
 
   // Save notes to Firebase whenever they change (debounced)
-  const isInitialMountNotes = useRef(true);
   useEffect(() => {
-    if (isInitialMountNotes.current) {
-      isInitialMountNotes.current = false;
-      return;
-    }
+    if (!hasLoaded) return;
+    
     const saveTimer = setTimeout(() => {
       const urlParams = new URLSearchParams(window.location.search);
       const boardId = urlParams.get('board') || 'default';
@@ -165,7 +146,7 @@ export function WallCalendar({
     }, 1000);
     
     return () => clearTimeout(saveTimer);
-  }, [notes]);
+  }, [notes, hasLoaded]);
 
   const currentMonthYear = `${currentDate.toLocaleDateString('en-US', { month: 'long' })} ${currentDate.getFullYear()}`;
 

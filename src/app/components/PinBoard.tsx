@@ -87,6 +87,7 @@ function scatterPosition(
 
 export function PinBoard() {
   const [pins, setPins] = useState<PinData[]>([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -125,29 +126,29 @@ export function PinBoard() {
           initialPins = [defaultCalendar, ...initialPins];
         }
         setPins(initialPins);
+        setHasLoaded(true);
       } catch (error) {
         console.error('Failed to load pins from Firebase:', error);
+        // Important: even if it fails, we set loaded to true so the user can at least 
+        // use the board afresh if they want, but usually we'd show an error.
+        setHasLoaded(true);
       }
     };
     
     fetchPins();
   }, []);
 
-  const isInitialMount = useRef(true);
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
+    if (!hasLoaded) return;
+    
     const saveTimer = setTimeout(() => {
-      if (pins.length === 0) return; // Don't save empty state immediately on boot
       const urlParams = new URLSearchParams(window.location.search);
       const boardId = urlParams.get('board') || 'default';
       setDoc(doc(db, 'boards', boardId), { pins }, { merge: true })
         .catch(error => console.error('Failed to save pins to Firebase:', error));
     }, 1000);
     return () => clearTimeout(saveTimer);
-  }, [pins]);
+  }, [pins, hasLoaded]);
 
   /* ── Drag handling ───────────────────────────────────────────────── */
   useEffect(() => {
@@ -257,6 +258,17 @@ export function PinBoard() {
   );
 
   /* ── Render ──────────────────────────────────────────────────────── */
+  if (!hasLoaded) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-white dark:bg-[#050505]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading your board...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       ref={boardRef}
