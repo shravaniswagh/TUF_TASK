@@ -6,7 +6,7 @@ import "./styles/index.css";
 // Auth flow will handle routing now
 
 createRoot(document.getElementById("root")!).render(
-  <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} disableTransitionOnChange>
     <App />
   </ThemeProvider>
 );

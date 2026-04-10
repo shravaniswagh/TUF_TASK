@@ -18,6 +18,8 @@ import {
   ListTodo,
   ClipboardList,
   Check,
+  ChevronLeft,
+  Palette,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
@@ -30,7 +32,7 @@ interface DragState {
 }
 
 /**
- * Premium Adaptive Dot Contrast Engine
+ * Premium Adaptive Grid Contrast Engine
  */
 function getAdaptiveDotColor(bgColor: string | null, isDark: boolean) {
   if (!bgColor) {
@@ -52,7 +54,9 @@ function getAdaptiveDotColor(bgColor: string | null, isDark: boolean) {
 export function PinBoard({ boardId }: { boardId: string }) {
   const [pins, setPins] = useState<PinData[]>([]);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [menuView, setMenuView] = useState<'main' | 'theme'>('main');
   const [boardColor, setBoardColor] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -60,8 +64,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
 
-  // We use resolvedTheme for logic, but we design the components to be stable
-  const isDark = resolvedTheme === 'dark';
+  // Sync mounted state for hydration safety
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && resolvedTheme === 'dark';
 
   /* ── Load & Sync ─────────────────────────────────────────────── */
   useEffect(() => {
@@ -72,16 +80,14 @@ export function PinBoard({ boardId }: { boardId: string }) {
       }
       try {
         const docSnap = await getDoc(doc(db, 'boards', boardId));
-        let initialPins: PinData[] = [];
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data.pins) initialPins = data.pins;
+          if (data.pins) setPins(data.pins);
           if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
         }
-        setPins(initialPins);
         setHasLoaded(true);
       } catch (err) {
-        console.error('Fetch Error:', err);
+        console.error('Fetch error:', err);
         setHasLoaded(true);
       }
     };
@@ -90,7 +96,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   useEffect(() => {
     if (!hasLoaded) return;
-    const timeout = setTimeout(() => {
+    const timer = setTimeout(() => {
       const cleaned = pins.map(p => {
         const c: any = {};
         Object.entries(p).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
@@ -102,7 +108,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
         lastUpdated: new Date().toISOString(),
       }, { merge: true }).catch(console.error);
     }, 1200);
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(timer);
   }, [pins, hasLoaded, boardId, boardColor]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
@@ -154,11 +160,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
-  /* ── Premium Aesthetic Logic ─────────────────────────────────── */
-  // Auto-switch palette colors for dark mode if they were chosen from the light list
+  /* ── Palette Restoration ────────────────────────────────────── */
+  // Determine final board background (respect theme constraints)
   const currentBoardBg = isDark 
     ? (THEME_CONFIG.boardPalettes.dark.some(p => p.color === boardColor) ? boardColor : null)
     : (THEME_CONFIG.boardPalettes.light.some(p => p.color === boardColor) ? boardColor : null);
+
+  const palette = isDark ? THEME_CONFIG.boardPalettes.dark : THEME_CONFIG.boardPalettes.light;
 
   return (
     <div
@@ -166,13 +174,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className="w-full h-full relative"
+      className={`w-full h-full relative transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}
       style={{
         backgroundColor: currentBoardBg || 'var(--background)',
         backgroundImage: `radial-gradient(circle, ${getAdaptiveDotColor(currentBoardBg, isDark)} 1.5px, transparent 1.5px)`,
         backgroundSize: '36px 36px',
         backgroundAttachment: 'fixed',
-        transition: 'background-color 0.4s ease-in-out',
+        transition: 'background-color 0.4s ease-out',
         overflow: 'hidden',
       }}
     >
@@ -208,7 +216,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
         )
       ))}
 
-      {/* ── Floating Action Menu (Vertical - High Standard) ────────── */}
+      {/* ── Premium Action Menu (Restored Palette) ────────────────── */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
         <AnimatePresence>
           {showAddMenu && (
@@ -217,39 +225,59 @@ export function PinBoard({ boardId }: { boardId: string }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-48 mb-1 overflow-hidden"
+              className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-56 mb-1 overflow-hidden"
             >
-              <MenuBtn icon={<StickyNote className="w-3.5 h-3.5 text-amber-500" />} bg="bg-amber-100 dark:bg-amber-900/40" label="Note" onClick={() => addPin('note')} />
-              <MenuBtn icon={<ImageIcon className="w-3.5 h-3.5 text-emerald-500" />} bg="bg-emerald-100 dark:bg-emerald-900/40" label="Image" onClick={() => addPin('image')} divider />
-              <MenuBtn icon={<Calendar className="w-3.5 h-3.5 text-indigo-500" />} bg="bg-indigo-100 dark:bg-indigo-900/40" label="Countdown" onClick={() => addPin('countdown')} divider />
-              <MenuBtn icon={<CalendarDays className="w-3.5 h-3.5 text-sky-500" />} bg="bg-sky-100 dark:bg-sky-900/40" label="Calendar" onClick={() => addPin('calendar')} divider />
-              <MenuBtn icon={<ListTodo className="w-3.5 h-3.5 text-emerald-500" />} bg="bg-emerald-100 dark:bg-emerald-900/40" label="To-Do List" onClick={() => addPin('todo')} divider />
-              <MenuBtn icon={<ClipboardList className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Daily Tasks" onClick={() => addPin('daily-tasks')} divider />
-              
-              <div className="border-t border-slate-100 dark:border-slate-800">
-                <MenuBtn 
-                  icon={copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />} 
-                  bg="bg-blue-100 dark:bg-blue-900/40" 
-                  label={copied ? 'Copied!' : 'Copy URL'} 
-                  onClick={handleCopyBoardUrl} 
-                />
-                <MenuBtn 
-                  icon={isDark ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />} 
-                  bg="bg-slate-100 dark:bg-slate-800" 
-                  label="Change Theme" 
-                  onClick={toggleTheme} 
-                  divider 
-                />
-                <button
-                  onClick={() => signOut(auth)}
-                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-                >
-                  <div className="w-6 h-6 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
-                    <LogOut className="w-3.5 h-3.5 text-rose-500" />
-                  </div>
-                  <span className="text-sm font-bold text-rose-500">Sign Out</span>
-                </button>
-              </div>
+              <AnimatePresence mode="wait">
+                {menuView === 'main' ? (
+                  <motion.div key="main" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }}>
+                     <MenuBtn icon={<StickyNote className="w-3.5 h-3.5 text-amber-500" />} bg="bg-amber-100 dark:bg-amber-900/40" label="Note" onClick={() => addPin('note')} />
+                     <MenuBtn icon={<ImageIcon className="w-3.5 h-3.5 text-emerald-500" />} bg="bg-emerald-100 dark:bg-emerald-900/40" label="Image" onClick={() => addPin('image')} divider />
+                     <MenuBtn icon={<Calendar className="w-3.5 h-3.5 text-indigo-500" />} bg="bg-indigo-100 dark:bg-indigo-900/40" label="Countdown" onClick={() => addPin('countdown')} divider />
+                     <MenuBtn icon={<CalendarDays className="w-3.5 h-3.5 text-sky-500" />} bg="bg-sky-100 dark:bg-sky-900/40" label="Calendar" onClick={() => addPin('calendar')} divider />
+                     <MenuBtn icon={<ListTodo className="w-3.5 h-3.5 text-teal-500" />} bg="bg-teal-100 dark:bg-teal-900/40" label="To-Do List" onClick={() => addPin('todo')} divider />
+                     <MenuBtn icon={<ClipboardList className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Daily Tasks" onClick={() => addPin('daily-tasks')} divider />
+                     
+                     <div className="border-t border-slate-100 dark:border-slate-800">
+                       <MenuBtn icon={copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />} bg="bg-blue-100 dark:bg-blue-900/40" label={copied ? 'Copied URL!' : 'Share Board'} onClick={handleCopyBoardUrl} />
+                       <MenuBtn icon={<Palette className="w-3.5 h-3.5 text-violet-500" />} bg="bg-violet-100 dark:bg-violet-900/40" label="Theme & Palette" onClick={() => setMenuView('theme')} divider />
+                       <MenuBtn icon={<LogOut className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Secure Sign Out" onClick={() => signOut(auth)} divider textClass="text-rose-500 font-bold" />
+                     </div>
+                  </motion.div>
+                ) : (
+                  <motion.div key="theme" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.15 }} className="p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <button onClick={() => setMenuView('main')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400"><ChevronLeft className="w-5 h-5" /></button>
+                      <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Settings</span>
+                    </div>
+
+                    <button onClick={toggleTheme} className="w-full p-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-4 border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        {isDark ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
+                      </div>
+                      <div className={`w-8 h-4.5 rounded-full relative transition-colors ${isDark ? 'bg-indigo-500' : 'bg-slate-300'}`}>
+                        <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full transition-all ${isDark ? 'left-4.25' : 'left-0.75'}`} />
+                      </div>
+                    </button>
+
+                    <div>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2.5 px-0.5">Board Color</p>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {palette.map(t => (
+                          <button
+                            key={t.name}
+                            onClick={() => setBoardColor(t.color)}
+                            className={`w-9 h-9 rounded-lg border-2 transition-all hover:scale-105 flex items-center justify-center ${boardColor === t.color ? 'border-indigo-500 shadow-sm' : 'border-transparent'}`}
+                            style={{ backgroundColor: t.color || (isDark ? '#050505' : '#ffffff') }}
+                          >
+                            {boardColor === t.color && <Check className="w-3.5 h-3.5 text-indigo-500" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
@@ -264,15 +292,14 @@ export function PinBoard({ boardId }: { boardId: string }) {
               Add your pin to the motivation board
             </motion.span>
           )}
-          
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.94 }}
-            onClick={() => setShowAddMenu(!showAddMenu)}
-            style={{ 
-              backgroundColor: THEME_CONFIG.accent.primary,
-              boxShadow: `0 8px 32px ${THEME_CONFIG.accent.glow}` 
+            onClick={() => {
+              setShowAddMenu(!showAddMenu);
+              if (!showAddMenu) setMenuView('main');
             }}
+            style={{ backgroundColor: THEME_CONFIG.accent.primary, boxShadow: `0 8px 32px ${THEME_CONFIG.accent.glow}` }}
             className="w-14 h-14 rounded-full text-white flex items-center justify-center relative shadow-lg"
           >
             <span style={{ backgroundColor: THEME_CONFIG.accent.primary }} className="absolute inset-0 rounded-full animate-ping opacity-20 pointer-events-none" />
@@ -283,18 +310,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
         </div>
       </div>
       
-      {/* Backdrop to close menu */}
-      {showAddMenu && (
-        <div className="absolute inset-0 z-[199]" onClick={() => setShowAddMenu(false)} />
-      )}
+      {showAddMenu && <div className="absolute inset-0 z-[199]" onClick={() => setShowAddMenu(false)} />}
     </div>
   );
 }
 
-/**
- * Clean Menu Button Component
- */
-function MenuBtn({ icon, bg, label, onClick, divider = false }: { icon: React.ReactNode; bg: string; label: string; onClick: () => void; divider?: boolean }) {
+function MenuBtn({ icon, bg, label, onClick, divider = false, textClass = "text-slate-700 dark:text-slate-200" }: { icon: React.ReactNode; bg: string; label: string; onClick: () => void; divider?: boolean; textClass?: string }) {
   return (
     <button
       onClick={onClick}
@@ -303,7 +324,7 @@ function MenuBtn({ icon, bg, label, onClick, divider = false }: { icon: React.Re
       <div className={`w-6 h-6 rounded-full ${bg} flex items-center justify-center transition-transform group-hover:scale-110`}>
         {icon}
       </div>
-      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
+      <span className={`text-sm font-medium ${textClass}`}>{label}</span>
     </button>
   );
 }
