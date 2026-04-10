@@ -300,7 +300,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
       }}
       minWidth={160}
       minHeight={120}
-      disable={isLocked ? { top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true } : {}}
       style={{
         position:   'absolute',
         left:       pin.x,

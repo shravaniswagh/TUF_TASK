@@ -317,7 +317,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                         <MenuBtn icon={<LogOut className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Secure Sign Out" onClick={() => signOut(auth)} divider textClass="text-rose-500 font-bold" />
                      </div>
                   </motion.div>
-                ) : (
+                ) : menuView === 'theme' ? (
                   <motion.div key="theme" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} transition={{ duration: 0.15 }} className="p-4">
                     <div className="flex items-center gap-2 mb-4">
                       <button onClick={() => setMenuView('main')} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400"><ChevronLeft className="w-5 h-5" /></button>

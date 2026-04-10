@@ -103,7 +103,6 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
       }}
       minWidth={400}
       minHeight={300}
-      disable={isLocked ? { top: true, right: true, bottom: true, left: true, topRight: true, bottomRight: true, bottomLeft: true, topLeft: true } : {}}
       style={{
         position:   'absolute',
         left:       pin.x,
