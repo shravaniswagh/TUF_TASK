@@ -22,6 +22,7 @@ export interface PinData {
   fontSize?: string;
   headerImage?: string;
   curveColor?: string;
+  textColor?: string;
 }
 
 interface PinProps {
@@ -415,13 +416,12 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                         ))}
                       </div>
 
-                      <label className="text-slate-600 block mb-1 text-xs">Size:</label>
                       <select
                         value={pin.fontSize || '14px'}
                         onChange={(e) => {
                           onUpdate(pin.id, { fontSize: e.target.value });
                         }}
-                        className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
+                        className="w-full px-2 py-1 border border-slate-200 rounded text-xs mb-3"
                       >
                         <option value="12px">Extra Small</option>
                         <option value="14px">Small</option>
@@ -430,6 +430,32 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                         <option value="24px">Extra Large</option>
                         <option value="32px">Huge</option>
                       </select>
+
+                      <label className="text-slate-600 block mb-1 text-xs">Text Color:</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { name: 'Auto', value: undefined },
+                          { name: 'Black', value: '#000000' },
+                          { name: 'White', value: '#FFFFFF' },
+                          { name: 'Blue', value: '#3B82F6' },
+                          { name: 'Rose', value: '#F43F5E' },
+                          { name: 'Emerald', value: '#10B981' },
+                          { name: 'Amber', value: '#F59E0B' },
+                          { name: 'Indigo', value: '#6366F1' },
+                        ].map((c) => (
+                          <button
+                            key={c.name}
+                            onClick={() => onUpdate(pin.id, { textColor: c.value })}
+                            className={`w-5 h-5 rounded-full border-2 transition-all hover:scale-110 ${
+                              pin.textColor === c.value || (!pin.textColor && !c.value)
+                                ? 'border-indigo-500 ring-2 ring-indigo-100' 
+                                : 'border-transparent'
+                            }`}
+                            style={{ backgroundColor: c.value || (isDark ? '#FFFFFF' : '#000000') }}
+                            title={c.name}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -765,7 +791,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
               <div 
                 className="text-4xl font-black tracking-tighter tabular-nums"
                 style={{ 
-                  color: getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor,
+                  color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor),
                   fontFamily: pin.fontFamily || 'system-ui'
                 }}
               >
@@ -774,7 +800,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
               <div 
                 className="mt-1 opacity-60 font-bold uppercase tracking-[0.2em] text-[10px]"
                 style={{ 
-                  color: getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor,
+                  color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor),
                   fontFamily: pin.fontFamily || 'system-ui'
                 }}
               >
@@ -783,7 +809,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
               <div 
                 className="mt-0.5 opacity-40 font-medium text-[9px] uppercase tracking-widest"
                 style={{ 
-                  color: getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor,
+                  color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor),
                   fontFamily: pin.fontFamily || 'system-ui'
                 }}
               >
