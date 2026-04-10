@@ -170,13 +170,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const isDark = mounted && resolvedTheme === 'dark';
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
-  if (!hasLoaded || !mounted) return null;
+  // We only render after mount to ensure next-themes is ready
+  if (!mounted) return null;
 
   /* ── Palette for current mode ──────────────────────────────────── */
   const palette = isDark ? THEME_CONFIG.boardPalettes.dark : THEME_CONFIG.boardPalettes.light;
 
-  // Determine if we should show the custom background or fall back to theme default
-  // If it's Dark Mode, we only allow colors from the dark palette
+  // If we are in Dark Mode but have a light board color, default to null so it falls back to theme default
   const currentBoardBg = isDark 
     ? (THEME_CONFIG.boardPalettes.dark.some(p => p.color === boardColor) ? boardColor : null)
     : (THEME_CONFIG.boardPalettes.light.some(p => p.color === boardColor) ? boardColor : null);
@@ -197,7 +197,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
         overflow: 'hidden',
       }}
     >
-      {pins.map(pin =>
+      {/* ── Pins Render (Only if loaded) ───────────────────────────── */}
+      {hasLoaded && pins.map(pin =>
         pin.type === 'calendar' ? (
           <CalendarPin key={pin.id} pin={pin} boardId={boardId}
             onUpdate={updatePin} onDelete={deletePin}
@@ -209,8 +210,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
         )
       )}
 
-      {/* ── FAB + Menu ───────────────────────────────────────────── */}
-      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2">
+      {/* ── FAB + Menu (Only if loaded) ───────────────────────────── */}
+      {hasLoaded && (
+        <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2">
         <AnimatePresence>
           {showMenu && (
             <motion.div
@@ -353,8 +355,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
           <motion.div animate={{ rotate: showMenu ? 45 : 0 }} transition={{ duration: 0.2 }}>
             <Plus className="w-8 h-8" />
           </motion.div>
-        </motion.button>
-      </div>
+          </motion.button>
+        </div>
+      )}
     </div>
   );
 }

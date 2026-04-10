@@ -21,13 +21,13 @@ export default function App() {
     setBoardId(initialBoard);
 
     const unsubscribe = onAuthStateChanged(auth, (u) => {
-      // First, update IDs but don't stop loading yet
       if (u && !isWallpaperMode) {
-         window.history.replaceState({}, '', `/?board=${u.uid}&web=true`);
-         setBoardId(u.uid);
+        if (boardId !== u.uid) {
+          window.history.replaceState({}, '', `/?board=${u.uid}&web=true`);
+          setBoardId(u.uid);
+        }
       }
       
-      // Finally, set user and finish loading in a single batch
       setUser(u);
       setLoading(false);
     });
