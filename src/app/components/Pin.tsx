@@ -341,7 +341,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
           </div>
           <div className="flex items-center gap-1">
             {/* Font picker */}
-            {(pin.type === 'note' || pin.type === 'countdown') && (
+            {(pin.type === 'note' || pin.type === 'countdown' || pin.type === 'todo') && (
               <div className="relative">
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
@@ -366,7 +366,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                         onChange={(e) => {
                           onUpdate(pin.id, { fontFamily: e.target.value });
                         }}
-                        className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
+                        className="w-full px-2 py-1 border border-slate-200 rounded text-xs mb-2"
                       >
                         <option value="system-ui">Default</option>
                         <option value="'Courier New', monospace">Typewriter</option>
@@ -374,13 +374,29 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                         <option value="'Georgia', serif">Elegant</option>
                         <option value="'Brush Script MT', cursive">Handwritten</option>
                       </select>
+
+                      <label className="text-slate-600 block mb-1 text-xs">Size:</label>
+                      <select
+                        value={pin.fontSize || '14px'}
+                        onChange={(e) => {
+                          onUpdate(pin.id, { fontSize: e.target.value });
+                        }}
+                        className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
+                      >
+                        <option value="12px">Extra Small</option>
+                        <option value="14px">Small</option>
+                        <option value="16px">Medium</option>
+                        <option value="20px">Large</option>
+                        <option value="24px">Extra Large</option>
+                        <option value="32px">Huge</option>
+                      </select>
                     </div>
                   </div>
                 )}
               </div>
             )}
             {/* Color picker */}
-            {(pin.type === 'note' || pin.type === 'image' || pin.type === 'todo' || pin.type === 'daily-tasks') && (
+            {(pin.type === 'note' || pin.type === 'image' || pin.type === 'todo' || pin.type === 'daily-tasks' || pin.type === 'countdown') && (
               <div className="relative">
                 <button
                   onMouseDown={(e) => e.stopPropagation()}

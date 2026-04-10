@@ -92,6 +92,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
+  const [backgroundUrl, setBackgroundUrl] = useState<string>('');
 
   /* ── Persistence & Initial Calendar ──────────────────────────────── */
   useEffect(() => {
@@ -107,6 +108,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
           }
           if (data.theme) {
             setTheme(data.theme);
+          }
+          if (data.backgroundUrl) {
+            setBackgroundUrl(data.backgroundUrl);
           }
         }
         
@@ -155,12 +159,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
       setDoc(doc(db, 'boards', boardId), { 
         pins: cleanedPins,
         theme,
+        backgroundUrl,
         lastUpdated: new Date().toISOString()
       }, { merge: true })
         .catch(error => console.error('Failed to save pins to Firebase:', error));
     }, 1000);
     return () => clearTimeout(saveTimer);
-  }, [pins, hasLoaded, theme, boardId]);
+  }, [pins, hasLoaded, theme, boardId, backgroundUrl]);
 
   /* ── Drag handling ───────────────────────────────────────────────── */
   useEffect(() => {
@@ -290,12 +295,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
         height:          '100%',
         userSelect:      dragging ? 'none' : 'auto',
         cursor:          dragging ? 'grabbing' : 'default',
-        // Premium dot-grid that responds to dark theme
-        backgroundImage: theme === 'dark' 
-          ? 'radial-gradient(circle, rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px)'
-          : 'radial-gradient(circle, rgba(0, 0, 0, 0.08) 1.5px, transparent 1.5px)',
-        backgroundSize:  '36px 36px',
-        // No overflow:hidden — pins are free; clipping removed
+        // Layered background: wallpaper underneath, dot-grid on top
+        backgroundImage: `
+          radial-gradient(circle, ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} 1.5px, transparent 1.5px)${backgroundUrl ? `, url(${backgroundUrl})` : ''}
+        `,
+        backgroundSize:  '36px 36px, cover',
+        backgroundPosition: 'center, center',
+        backgroundAttachment: 'fixed, fixed',
         overflow:        'hidden',
       }}
     >
@@ -413,7 +419,21 @@ export function PinBoard({ boardId }: { boardId: string }) {
               </button>
               <button
                 onClick={() => {
-                  setTheme(theme === 'dark' ? 'light' : 'dark');
+                  const url = prompt('Enter image URL for board wallpaper:', backgroundUrl);
+                  if (url !== null) setBackgroundUrl(url);
+                  setShowAddMenu(false);
+                }}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+              >
+                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                  <ImageIcon className="w-3.5 h-3.5 text-blue-500" />
+                </div>
+                <span className="text-sm text-slate-700">Set Wallpaper</span>
+              </button>
+              <button
+                onClick={() => {
+                  const newTheme = theme === 'dark' ? 'light' : 'dark';
+                  setTheme(newTheme);
                   setShowAddMenu(false);
                 }}
                 className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
