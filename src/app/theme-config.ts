@@ -43,12 +43,12 @@ export const THEME_CONFIG = {
 
   // ── Pin Palette (The colors in the palette menu) ───────────────
   pinPalette: [
-    '#FFFFFF', '#F8FAFC', '#F1F5F9', 
-    '#FFFBEB', '#FEF3C7', '#F2E3F5', 
-    '#E2E8F0', '#475569', 
-    '#334155', '#1E293B', '#0F172A', 
-    '#020617', '#18181B', '#27272A', 
-    '#3F3F46', '#52525B', '#71717A', 
+    // Tier 1: Soft Premium Neutrals
+    '#FAFAFA', '#FFFBEB', '#FFF5F7', '#F0F9FF', '#F9F5FF', '#F0FDF4',
+    // Tier 2: Vibrant Statement Colors
+    '#FBBF24', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#F43F5E',
+    // Tier 3: Deep Professional Accents (Lush darks)
+    '#334155', '#111827', '#064E3B', '#4C1D95', '#1E1B4B', '#111111',
   ],
 
   // ── Board Palettes (Mode-Specific) ─────────────────────────────
