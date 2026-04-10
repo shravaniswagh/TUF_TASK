@@ -20,6 +20,8 @@
 - **Dynamic Range Selection**: Seamlessly select date ranges on the calendar.
 - **Interactive Pinboard**: A dynamic workspace for your ideas and tasks.
 - **Sticky Notes**: Create, edit, and organize stylized notes.
+- **Cloud Persistence**: Integrated with Firebase for real-time saving and multi-device sync.
+- **Hybrid Authentication**: Secure Login/Register system for web users with a specialized "Bypass URL" feature for desktop wallpaper engines.
 - **Countdown Timers**: Keep track of upcoming important events (e.g., interviews, deadlines).
 - **Responsive Design**: Beautifully crafted for both desktop and mobile screens.
 - **Premium Aesthetics**: Modern UI with soft shadows, engaging micro-animations, and a clean typography hierarchy.
@@ -27,6 +29,7 @@
 ## 🛠️ Technology Stack
 
 - **Framework**: [React](https://reactjs.org/) (Vite)
+- **Database & Auth**: [Firebase](https://firebase.google.com/) (Firestore & Auth)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) & Vanilla CSS for custom soft UI effects
 - **Components**: [Radix UI](https://www.radix-ui.com/)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
