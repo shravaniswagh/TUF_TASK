@@ -205,7 +205,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
     setPins(prev => prev.filter(p => p.id !== id)), []);
 
   const handleCopyBoardUrl = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/?board=${boardId}&web=true`);
+    navigator.clipboard.writeText(`${window.location.origin}/?board=${boardId}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
