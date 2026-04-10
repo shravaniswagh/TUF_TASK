@@ -43,18 +43,16 @@ export const THEME_CONFIG = {
 
   // ── Pin Palette (The colors in the palette menu) ───────────────
   pinPalette: [
-    // Reds/Pinks (Light -> Bright)
-    '#FFF1F2', '#FFE4E6', '#FECACA', '#FDA4AF', '#FB7185',
-    // Yellows/Ambers (Light -> Bright)
-    '#FFFBEB', '#FEF3C7', '#FDE68A', '#FCD34D', '#FACC15',
-    // Greens/Emeralds (Light -> Bright)
-    '#F0FDF4', '#DCFCE7', '#BBF7D0', '#6EE7B7', '#34D399',
-    // Blues/Azures (Light -> Bright)
-    '#EFF6FF', '#DBEAFE', '#BFDBFE', '#93C5FD', '#60A5FA',
-    // Purples/Violets (Light -> Bright)
-    '#F5F3FF', '#EDE9FE', '#DDD6FE', '#C4B5FD', '#A78BFA',
-    // Neutrals (Light -> Soft Grey)
-    '#FAFAFA', '#F4F4F5', '#E4E4E7', '#D4D4D8', '#A1A1AA',
+    // Row 1: Ultra-Light Pastels (Level 50)
+    '#FFF1F2', '#FFFBEB', '#F0FDF4', '#EFF6FF', '#F5F3FF', '#FAFAFA',
+    // Row 2: Soft Tints (Level 100)
+    '#FFE4E6', '#FEF3C7', '#DCFCE7', '#DBEAFE', '#EDE9FE', '#F4F4F5',
+    // Row 3: Delicate Mid-tones (Level 200)
+    '#FECACA', '#FDE68A', '#BBF7D0', '#BFDBFE', '#DDD6FE', '#E4E4E7',
+    // Row 4: Bright Accents (Level 300-400)
+    '#FDA4AF', '#FCD34D', '#6EE7B7', '#93C5FD', '#C4B5FD', '#D4D4D8',
+    // Row 5: Vibrant & Rich (Level 400-500)
+    '#FB7185', '#FACC15', '#34D399', '#60A5FA', '#A78BFA', '#A1A1AA',
   ],
 
   // ── Board Palettes (Mode-Specific) ─────────────────────────────
