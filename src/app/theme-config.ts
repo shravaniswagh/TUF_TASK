@@ -43,12 +43,18 @@ export const THEME_CONFIG = {
 
   // ── Pin Palette (The colors in the palette menu) ───────────────
   pinPalette: [
-    // Weight 1: Luminous Pastels (Level 50-100)
-    '#FFF1F2', '#FFFBEB', '#F0FDF4', '#EFF6FF', '#F5F3FF', '#FAFAFA',
-    // Weight 2: Soft Vibrant (Level 300)
-    '#FDA4AF', '#FCD34D', '#6EE7B7', '#93C5FD', '#C4B5FD', '#CBD5E1',
-    // Weight 3: Rich Premium (Level 500-600)
-    '#F43F5E', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#64748B',
+    // Reds/Pinks (Light -> Bright)
+    '#FFF1F2', '#FFE4E6', '#FECACA', '#FDA4AF', '#FB7185',
+    // Yellows/Ambers (Light -> Bright)
+    '#FFFBEB', '#FEF3C7', '#FDE68A', '#FCD34D', '#FACC15',
+    // Greens/Emeralds (Light -> Bright)
+    '#F0FDF4', '#DCFCE7', '#BBF7D0', '#6EE7B7', '#34D399',
+    // Blues/Azures (Light -> Bright)
+    '#EFF6FF', '#DBEAFE', '#BFDBFE', '#93C5FD', '#60A5FA',
+    // Purples/Violets (Light -> Bright)
+    '#F5F3FF', '#EDE9FE', '#DDD6FE', '#C4B5FD', '#A78BFA',
+    // Neutrals (Light -> Soft Grey)
+    '#FAFAFA', '#F4F4F5', '#E4E4E7', '#D4D4D8', '#A1A1AA',
   ],
 
   // ── Board Palettes (Mode-Specific) ─────────────────────────────
