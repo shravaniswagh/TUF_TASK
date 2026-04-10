@@ -157,13 +157,30 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
       setDoc(doc(db, 'boards', boardId), { 
         pins: cleanedPins,
-        theme: theme || 'light',
         lastUpdated: new Date().toISOString()
       }, { merge: true })
         .catch(error => console.error('Failed to save pins to Firebase:', error));
     }, 1000);
     return () => clearTimeout(saveTimer);
-  }, [pins, hasLoaded, theme, boardId]);
+  }, [pins, hasLoaded, boardId]);
+
+  const handleToggleTheme = async () => {
+    const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
+    
+    // 1. Update local state immediately
+    setTheme(newTheme);
+    setShowAddMenu(false);
+
+    // 2. Explicitly save to Firestore
+    try {
+      await setDoc(doc(db, 'boards', boardId), { 
+        theme: newTheme,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Failed to save theme to Firebase:', error);
+    }
+  };
 
   const handleCopyBoardUrl = () => {
     const url = `${window.location.origin}/?board=${boardId}`;
@@ -432,11 +449,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 <span className="text-sm font-medium text-slate-700">{copied ? 'Copied!' : 'Copy Site URL'}</span>
               </button>
               <button
-                onClick={() => {
-                  const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
-                  setTheme(newTheme);
-                  setShowAddMenu(false);
-                }}
+                onClick={handleToggleTheme}
                 className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
               >
                 <div className="w-6 h-6 rounded-full bg-slate-800 dark:bg-amber-100 flex items-center justify-center">
