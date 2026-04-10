@@ -108,9 +108,6 @@ export function PinBoard({ boardId }: { boardId: string }) {
           if (data.pins && data.pins.length > 0) {
             initialPins = data.pins;
           }
-          if (data.theme && data.theme !== theme) {
-            setTheme(data.theme);
-          }
         }
         
         const hasCalendar = initialPins.some((p: PinData) => p.type === 'calendar');
@@ -164,22 +161,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
     return () => clearTimeout(saveTimer);
   }, [pins, hasLoaded, boardId]);
 
-  const handleToggleTheme = async () => {
+  const handleToggleTheme = () => {
     const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
     
-    // 1. Update local state immediately
+    // Update local state immediately (next-themes handles localStorage automatically)
     setTheme(newTheme);
     setShowAddMenu(false);
-
-    // 2. Explicitly save to Firestore
-    try {
-      await setDoc(doc(db, 'boards', boardId), { 
-        theme: newTheme,
-        lastUpdated: new Date().toISOString()
-      }, { merge: true });
-    } catch (error) {
-      console.error('Failed to save theme to Firebase:', error);
-    }
   };
 
   const handleCopyBoardUrl = () => {

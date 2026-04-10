@@ -360,10 +360,10 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={() => setShowFontPicker(!showFontPicker)}
-                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+                  className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${getContrastColor(bgColor).includes('slate-50') ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
                   title="Font options"
                 >
-                  <Type className="w-3 h-3 text-slate-500" />
+                  <Settings2 className={`w-3.5 h-3.5 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
                 </button>
                 {showFontPicker && (
                   <div
@@ -417,11 +417,11 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                   onClick={() => setShowColorPicker(!showColorPicker)}
                   className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
                 >
-                  <Palette className="w-3 h-3 text-slate-500" />
+                  <Palette className={`w-3.5 h-3.5 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
                 </button>
                 {showColorPicker && (
                   <div
-                    className="absolute top-6 right-0 bg-white rounded-lg shadow-xl border border-slate-200 p-2 grid grid-cols-6 gap-1.5 z-50"
+                    className={`${resolvedTheme === 'dark' ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} absolute top-8 right-0 rounded-xl shadow-2xl border p-3 grid grid-cols-6 gap-2 z-50 animate-in fade-in zoom-in duration-150`}
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.nativeEvent.stopImmediatePropagation();
@@ -431,8 +431,9 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                       <button
                         key={color}
                         onClick={() => handleColorChange(color)}
-                        className="w-6 h-6 rounded-full border-2 border-slate-200 hover:scale-110 transition-transform"
+                        className={`w-6 h-6 rounded-full border transition-all hover:scale-125 hover:shadow-lg ${color === '#FFFFFF' ? 'border-slate-200' : 'border-black/5'}`}
                         style={{ backgroundColor: color }}
+                        title={color}
                       />
                     ))}
                   </div>
