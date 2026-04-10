@@ -303,9 +303,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
         height:          '100%',
         userSelect:      dragging ? 'none' : 'auto',
         cursor:          dragging ? 'grabbing' : 'default',
-        // Layered background: wallpaper underneath, dot-grid on top
+        // Layered background: dot-grid on top of background
         backgroundImage: `
-          radial-gradient(circle, ${resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} 1.5px, transparent 1.5px)
+          radial-gradient(circle, var(--dot-color) 1.5px, transparent 1.5px)
         `,
         backgroundSize:  '36px 36px',
         backgroundPosition: 'center',

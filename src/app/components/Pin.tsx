@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { Resizable } from 're-resizable';
-import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList } from 'lucide-react';
+import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Settings2, Sun, Moon } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export interface PinData {
@@ -60,17 +60,30 @@ const NOTE_COLORS = [
 function getContrastColor(hexColor?: string) {
   if (!hexColor || hexColor === 'transparent') return 'text-slate-700';
   
-  // Remove hash
-  const hex = hexColor.replace('#', '');
-  if (hex.length !== 6) return 'text-slate-900'; // Defensive
-  
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  
-  // Brightness formula
-  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
+  try {
+    // Remove hash
+    const hex = hexColor.replace('#', '');
+    
+    // We only handle standard hex here. If it's short, expand it.
+    let fullHex = hex;
+    if (hex.length === 3) {
+      fullHex = hex.split('').map(c => c + c).join('');
+    }
+    
+    if (fullHex.length !== 6) return 'text-slate-900'; 
+    
+    const r = parseInt(fullHex.substring(0, 2), 16);
+    const g = parseInt(fullHex.substring(2, 4), 16);
+    const b = parseInt(fullHex.substring(4, 6), 16);
+    
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return 'text-slate-900';
+    
+    // Brightness formula
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
+  } catch (e) {
+    return 'text-slate-900';
+  }
 }
 
 function calculateDaysRemaining(targetDateStr: string): number {
