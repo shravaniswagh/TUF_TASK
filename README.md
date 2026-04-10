@@ -8,7 +8,7 @@
   </p>
   
   <p>
-    <a href="https://tuf-event.vercel.app/"><strong>Live Demo</strong></a> · 
+    <a href="https://silksync.vercel.app/"><strong>Live Demo</strong></a> · 
     <a href="https://drive.google.com/drive/folders/1fJ8xMYEQqWo2ahAxzHCmm4pB40h0svnY?usp=sharing"><strong>Video Demonstration</strong></a>
   </p>
 
@@ -75,5 +75,5 @@ Follow these instructions to run the project locally.
 
 ## 🔗 Links
 
-- **Live Site**: [https://tuf-event.vercel.app/](https://tuf-event.vercel.app/)
+- **Live Site**: [https://silksync.vercel.app/](https://silksync.vercel.app/)
 - **Video Walkthrough**: [Google Drive Link](https://drive.google.com/drive/folders/1fJ8xMYEQqWo2ahAxzHCmm4pB40h0svnY?usp=sharing)
