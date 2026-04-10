@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarGrid } from './CalendarGrid';
 import { NotesSection } from './NotesSection';
@@ -108,30 +110,61 @@ export function WallCalendar({
   // Use provided headerImage or default
   const displayImage = headerImage || exampleImage;
 
-  // Load notes from localStorage on mount
+  // Load notes from Firebase on mount
   useEffect(() => {
-    const savedNotes = localStorage.getItem('calendar-notes');
-    if (savedNotes) {
+    const fetchNotes = async () => {
       try {
-        const parsed = JSON.parse(savedNotes);
-        // Convert date strings back to Date objects
-        const notesWithDates = parsed.map((note: any) => ({
-          ...note,
-          dateRange: {
-            start: note.dateRange.start ? new Date(note.dateRange.start) : null,
-            end: note.dateRange.end ? new Date(note.dateRange.end) : null,
-          },
-        }));
-        setNotes(notesWithDates);
+        const urlParams = new URLSearchParams(window.location.search);
+        const boardId = urlParams.get('board') || 'default';
+        const docSnap = await getDoc(doc(db, 'notes', boardId));
+        
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.notes) {
+            // Convert date strings back to Date objects
+            const notesWithDates = data.notes.map((note: any) => ({
+              ...note,
+              dateRange: {
+                start: note.dateRange.start ? new Date(note.dateRange.start) : null,
+                end: note.dateRange.end ? new Date(note.dateRange.end) : null,
+              },
+            }));
+            setNotes(notesWithDates);
+          }
+        }
       } catch (error) {
         console.error('Failed to load notes:', error);
       }
-    }
+    };
+    
+    fetchNotes();
   }, []);
 
-  // Save notes to localStorage whenever they change
+  // Save notes to Firebase whenever they change (debounced)
+  const isInitialMountNotes = useRef(true);
   useEffect(() => {
-    localStorage.setItem('calendar-notes', JSON.stringify(notes));
+    if (isInitialMountNotes.current) {
+      isInitialMountNotes.current = false;
+      return;
+    }
+    const saveTimer = setTimeout(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const boardId = urlParams.get('board') || 'default';
+      
+      // Convert Dates to ISO strings for Firestore storage
+      const serializedNotes = notes.map(note => ({
+        ...note,
+        dateRange: {
+          start: note.dateRange.start ? note.dateRange.start.toISOString() : null,
+          end: note.dateRange.end ? note.dateRange.end.toISOString() : null,
+        }
+      }));
+      
+      setDoc(doc(db, 'notes', boardId), { notes: serializedNotes }, { merge: true })
+        .catch(error => console.error('Failed to save notes:', error));
+    }, 1000);
+    
+    return () => clearTimeout(saveTimer);
   }, [notes]);
 
   const currentMonthYear = `${currentDate.toLocaleDateString('en-US', { month: 'long' })} ${currentDate.getFullYear()}`;

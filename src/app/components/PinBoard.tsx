@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { Pin, PinData } from './Pin';
 import { CalendarPin } from './CalendarPin';
 import { Plus, StickyNote, Calendar, Image as ImageIcon, CalendarDays, Moon, Sun, ListTodo, ClipboardList } from 'lucide-react';
@@ -92,16 +94,22 @@ export function PinBoard() {
 
   /* ── Persistence & Initial Calendar ──────────────────────────────── */
   useEffect(() => {
-    const saved = localStorage.getItem('pin-board-v3');
-    if (saved) {
-      try { 
-        const parsedPins = JSON.parse(saved);
-        setPins(parsedPins);
+    const fetchPins = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const boardId = urlParams.get('board') || 'default';
+        const docSnap = await getDoc(doc(db, 'boards', boardId));
         
-        // Ensure there's always a calendar pin
-        const hasCalendar = parsedPins.some((p: PinData) => p.type === 'calendar');
+        let initialPins: PinData[] = [];
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.pins && data.pins.length > 0) {
+            initialPins = data.pins;
+          }
+        }
+        
+        const hasCalendar = initialPins.some((p: PinData) => p.type === 'calendar');
         if (!hasCalendar) {
-          // Add default calendar pin
           const defaultCalendar: PinData = {
             id: 'calendar-default',
             type: 'calendar',
@@ -114,44 +122,31 @@ export function PinBoard() {
             zIndex: 1000,
             rotation: 0,
           };
-          setPins([defaultCalendar, ...parsedPins]);
+          initialPins = [defaultCalendar, ...initialPins];
         }
-      } catch { 
-        // If parsing fails, create default calendar
-        const defaultCalendar: PinData = {
-          id: 'calendar-default',
-          type: 'calendar',
-          content: '',
-          x: 40,
-          y: 40,
-          width: 480,
-          height: 600,
-          color: '#FFFFFF',
-          zIndex: 1000,
-          rotation: 0,
-        };
-        setPins([defaultCalendar]);
+        setPins(initialPins);
+      } catch (error) {
+        console.error('Failed to load pins from Firebase:', error);
       }
-    } else {
-      // No saved data - create default calendar
-      const defaultCalendar: PinData = {
-        id: 'calendar-default',
-        type: 'calendar',
-        content: '',
-        x: 40,
-        y: 40,
-        width: 480,
-        height: 600,
-        color: '#FFFFFF',
-        zIndex: 1000,
-        rotation: 0,
-      };
-      setPins([defaultCalendar]);
-    }
+    };
+    
+    fetchPins();
   }, []);
 
+  const isInitialMount = useRef(true);
   useEffect(() => {
-    localStorage.setItem('pin-board-v3', JSON.stringify(pins));
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const saveTimer = setTimeout(() => {
+      if (pins.length === 0) return; // Don't save empty state immediately on boot
+      const urlParams = new URLSearchParams(window.location.search);
+      const boardId = urlParams.get('board') || 'default';
+      setDoc(doc(db, 'boards', boardId), { pins }, { merge: true })
+        .catch(error => console.error('Failed to save pins to Firebase:', error));
+    }, 1000);
+    return () => clearTimeout(saveTimer);
   }, [pins]);
 
   /* ── Drag handling ───────────────────────────────────────────────── */
