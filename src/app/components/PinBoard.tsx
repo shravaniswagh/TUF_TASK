@@ -95,11 +95,17 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [copied, setCopied] = useState(false);
+  const prevBoardIdRef = useRef(boardId);
 
   /* ── Persistence & Initial Calendar ──────────────────────────────── */
   useEffect(() => {
     const fetchPins = async () => {
-      setHasLoaded(false); // Reset loading when boardId changes
+      // Only show loading screen if we are actually switching boards
+      if (prevBoardIdRef.current !== boardId) {
+        setHasLoaded(false);
+        prevBoardIdRef.current = boardId;
+      }
+      
       try {
         const docSnap = await getDoc(doc(db, 'boards', boardId));
         let initialPins: PinData[] = [];
@@ -289,11 +295,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }
 
   return (
-    <motion.div
+    <div
       ref={boardRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 1.2, ease: "easeInOut" }}
       style={{
         position:        'relative',
         width:           '100%',
@@ -492,6 +495,6 @@ export function PinBoard({ boardId }: { boardId: string }) {
           onClick={() => setShowAddMenu(false)}
         />
       )}
-    </motion.div>
+    </div>
   );
 }

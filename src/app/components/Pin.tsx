@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTheme } from 'next-themes';
 import { Resizable } from 're-resizable';
 import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -61,6 +62,8 @@ function getContrastColor(hexColor?: string) {
   
   // Remove hash
   const hex = hexColor.replace('#', '');
+  if (hex.length !== 6) return 'text-slate-900'; // Defensive
+  
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
@@ -109,6 +112,7 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
 export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false }: PinProps) {
+  const { resolvedTheme } = useTheme();
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [noteContent, setNoteContent] = useState(pin.content);
