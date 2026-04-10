@@ -279,7 +279,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
       ))}
 
       {/* ── Actions Menu ───────────────────────────────────────────── */}
-      <div className="fixed bottom-16 right-6 z-[9999] flex flex-col items-end gap-3">
+      <div className="fixed bottom-16 right-6 z-[999999] flex flex-col items-end gap-3">
         <AnimatePresence>
           {showAddMenu && (
             <motion.div
@@ -437,7 +437,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
         </div>
       </div>
       
-      {showAddMenu && <div className="absolute inset-0 z-[199]" onClick={() => setShowAddMenu(false)} />}
+      {showAddMenu && <div className="fixed inset-0 z-[999998] bg-black/5 backdrop-blur-[1px]" onClick={() => setShowAddMenu(false)} />}
     </div>
   );
 }
