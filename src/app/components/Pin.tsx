@@ -25,6 +25,7 @@ export interface PinData {
 
 interface PinProps {
   pin: PinData;
+  boardId: string;
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
   onDragStart: (id: string, e: React.MouseEvent) => void;
@@ -90,7 +91,10 @@ function darkenColor(hex: string, percent: number): string {
   return `#${rr}${gg}${bb}`;
 }
 
-export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }: PinProps) {
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../firebase';
+
+export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [noteContent, setNoteContent] = useState(pin.content);
@@ -129,16 +133,16 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
   // Daily Tasks sync logic
   useEffect(() => {
     if (pin.type === 'daily-tasks') {
-      const updateDailyTasks = () => {
-        const saved = localStorage.getItem('calendar-notes');
-        if (saved) {
+      // Use Firestore listener instead of localStorage
+      const unsubscribe = onSnapshot(doc(db, 'notes', boardId), (docSnap) => {
+        if (docSnap.exists()) {
           try {
-            const parsed = JSON.parse(saved);
+            const data = docSnap.data();
+            const allNotes = data.notes || [];
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
-            // Filter solely based on date range, ignoring monthYear string for better robustness
-            const filtered = parsed.filter((note: any) => {
+            const filtered = allNotes.filter((note: any) => {
               const start = note.dateRange.start ? new Date(note.dateRange.start) : null;
               const end = note.dateRange.end ? new Date(note.dateRange.end) : null;
               
@@ -161,14 +165,11 @@ export function Pin({ pin, onUpdate, onDelete, onDragStart, isDragging = false }
             console.error('Failed to parse calendar notes', e);
           }
         }
-      };
+      });
 
-      updateDailyTasks();
-      // Polling for updates
-      const interval = setInterval(updateDailyTasks, 2000);
-      return () => clearInterval(interval);
+      return () => unsubscribe();
     }
-  }, [pin.type]);
+  }, [pin.type, boardId]);
 
   const handleNoteSave = () => {
     onUpdate(pin.id, { content: noteContent });

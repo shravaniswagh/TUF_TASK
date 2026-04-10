@@ -99,13 +99,14 @@ export function PinBoard() {
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const boardId = urlParams.get('board') || 'default';
-        const docSnap = await getDoc(doc(db, 'boards', boardId));
-        
         let initialPins: PinData[] = [];
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.pins && data.pins.length > 0) {
             initialPins = data.pins;
+          }
+          if (data.theme) {
+            setTheme(data.theme);
           }
         }
         
@@ -129,14 +130,21 @@ export function PinBoard() {
         setHasLoaded(true);
       } catch (error) {
         console.error('Failed to load pins from Firebase:', error);
-        // Important: even if it fails, we set loaded to true so the user can at least 
-        // use the board afresh if they want, but usually we'd show an error.
         setHasLoaded(true);
       }
     };
     
     fetchPins();
-  }, []);
+  }, [setTheme]);
+
+  // Helper to remove undefined values which Firestore dislikes in arrays
+  const cleanPinForFirestore = (pin: PinData) => {
+    const cleaned: any = {};
+    Object.entries(pin).forEach(([key, value]) => {
+      if (value !== undefined) cleaned[key] = value;
+    });
+    return cleaned;
+  };
 
   useEffect(() => {
     if (!hasLoaded) return;
@@ -144,11 +152,18 @@ export function PinBoard() {
     const saveTimer = setTimeout(() => {
       const urlParams = new URLSearchParams(window.location.search);
       const boardId = urlParams.get('board') || 'default';
-      setDoc(doc(db, 'boards', boardId), { pins }, { merge: true })
+      
+      const cleanedPins = pins.map(cleanPinForFirestore);
+
+      setDoc(doc(db, 'boards', boardId), { 
+        pins: cleanedPins,
+        theme,
+        lastUpdated: new Date().toISOString()
+      }, { merge: true })
         .catch(error => console.error('Failed to save pins to Firebase:', error));
     }, 1000);
     return () => clearTimeout(saveTimer);
-  }, [pins, hasLoaded]);
+  }, [pins, hasLoaded, theme]);
 
   /* ── Drag handling ───────────────────────────────────────────────── */
   useEffect(() => {
@@ -302,6 +317,7 @@ export function PinBoard() {
           <Pin
             key={pin.id}
             pin={pin}
+            boardId={new URLSearchParams(window.location.search).get('board') || 'default'}
             onUpdate={updatePin}
             onDelete={deletePin}
             onDragStart={handlePinDragStart}
