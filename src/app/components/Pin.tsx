@@ -48,13 +48,27 @@ const PIN_HEAD_COLORS: Record<string, string> = {
 };
 
 const NOTE_COLORS = [
-  '#FFFBEB', '#FEF3C7', '#FDE68A', // yellows
-  '#EFF6FF', '#DBEAFE', '#BFDBFE', // blues
-  '#FDF4FF', '#FAE8FF', '#F5D0FE', // purples
-  '#F0FDF4', '#DCFCE7', '#BBF7D0', // greens
-  '#FFF1F2', '#FFE4E6', '#FECDD3', // pinks
-  '#FFFFFF', '#F8FAFC', '#F1F5F9', // grays
+  '#FFFFFF', '#F8FAFC', '#F1F5F9', // Premium Whites/Grsys
+  '#FFFBEB', '#FEF3C7', '#FDF4FF', // Warm/Soft Clean
+  '#E2E8F0', '#94A3B8', '#475569', // Professional Slates
+  '#334155', '#1E293B', '#0F172A', // Deep Midnights
+  '#020617', '#18181B', '#27272A', // Obsidian/Zincs
+  '#3F3F46', '#52525B', '#71717A', // Industrial Grays
 ];
+
+function getContrastColor(hexColor?: string) {
+  if (!hexColor || hexColor === 'transparent') return 'text-slate-700';
+  
+  // Remove hash
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Brightness formula
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
+}
 
 function calculateDaysRemaining(targetDateStr: string): number {
   const target = new Date(targetDateStr);
@@ -331,11 +345,11 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
             onDragStart(pin.id, e);
           }}
           className="flex items-center justify-between px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0"
-          style={{ backgroundColor: 'rgba(0,0,0,0.03)' }}
+          style={{ backgroundColor: getContrastColor(bgColor).includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
         >
           <div className="flex items-center gap-1.5">
-            <GripVertical className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs text-slate-500 capitalize tracking-wide font-medium">
+            <GripVertical className={`w-3.5 h-3.5 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-400' : 'text-slate-400'}`} />
+            <span className={`text-xs capitalize tracking-wide font-medium ${getContrastColor(bgColor)}`}>
               {pin.type.replace('-', ' ')}
             </span>
           </div>
@@ -465,7 +479,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                     }
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="w-full h-full resize-none outline-none bg-transparent text-slate-700 placeholder-slate-400 leading-relaxed custom-scrollbar"
+                  className={`w-full h-full resize-none outline-none bg-transparent placeholder-slate-400 leading-relaxed custom-scrollbar ${getContrastColor(bgColor)}`}
                   placeholder="Pin your motivation here..."
                   style={{
                     fontFamily: pin.fontFamily || 'system-ui',
@@ -475,7 +489,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
               ) : (
                 <div
                   onClick={() => setIsEditingNote(true)}
-                  className="w-full h-full cursor-text text-slate-700 whitespace-pre-wrap leading-relaxed overflow-auto custom-scrollbar"
+                  className={`w-full h-full cursor-text whitespace-pre-wrap leading-relaxed overflow-auto custom-scrollbar ${getContrastColor(bgColor)}`}
                   style={{
                     minHeight: 40,
                     fontFamily: pin.fontFamily || 'system-ui',
@@ -595,11 +609,11 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
             <div className="h-full flex flex-col items-center justify-center gap-1">
               <div
                 className="text-5xl tabular-nums"
-                style={{ color: pinHeadColor, fontWeight: 700 }}
+                style={{ color: getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor, fontWeight: 700 }}
               >
                 {daysRemaining}
               </div>
-              <div className="text-xs text-slate-500 tracking-widest uppercase">
+              <div className={`text-xs tracking-widest uppercase ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`}>
                 days left
               </div>
               {isEditingLabel ? (
@@ -651,7 +665,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                   value={newTodo}
                   onChange={e => setNewTodo(e.target.value)}
                   placeholder="Add task..."
-                  className="flex-1 px-2 py-1.5 text-sm bg-white/50 border border-black/5 rounded-lg outline-none focus:ring-1 focus:ring-emerald-400/50 text-slate-800"
+                  className={`flex-1 px-2 py-1.5 text-sm rounded-lg outline-none focus:ring-1 focus:ring-emerald-400/50 bg-white/20 border border-black/5 ${getContrastColor(bgColor)} placeholder-slate-400`}
                 />
                 <button type="submit" className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm">
                   <Plus className="w-4 h-4" />
@@ -667,7 +681,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                     >
                       {todo.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
                     </button>
-                    <span className={`text-sm flex-1 leading-snug ${todo.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}>
+                    <span className={`text-sm flex-1 leading-snug ${todo.completed ? 'opacity-40 line-through' : ''} ${getContrastColor(bgColor)}`}>
                       {todo.text}
                     </span>
                     <button

@@ -108,7 +108,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
           if (data.pins && data.pins.length > 0) {
             initialPins = data.pins;
           }
-          if (data.theme) {
+          if (data.theme && data.theme !== theme) {
             setTheme(data.theme);
           }
         }
@@ -433,14 +433,14 @@ export function PinBoard({ boardId }: { boardId: string }) {
               </button>
               <button
                 onClick={() => {
-                  const newTheme = theme === 'dark' ? 'light' : 'dark';
+                  const newTheme = (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? 'light' : 'dark';
                   setTheme(newTheme);
                   setShowAddMenu(false);
                 }}
                 className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
               >
                 <div className="w-6 h-6 rounded-full bg-slate-800 dark:bg-amber-100 flex items-center justify-center">
-                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-600" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
+                  {(theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) ? <Sun className="w-3.5 h-3.5 text-amber-600" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
                 </div>
                 <span className="text-sm font-medium text-slate-700">Change Theme</span>
               </button>
