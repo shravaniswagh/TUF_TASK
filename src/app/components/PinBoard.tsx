@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Pin, PinData } from './Pin';
@@ -70,8 +70,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, []);
 
   // 2. FORCE SYSTEM LOCK: Manually synchronize DOM classes and body backgrounds
-  // This acts as a 'fail-safe' for next-themes to ensure Dark Mode stays locked.
-  useEffect(() => {
+  // We use useLayoutEffect to apply this BEFORE the browser paints to prevent flicker.
+  useLayoutEffect(() => {
     if (!mounted) return;
     const isDarkNow = resolvedTheme === 'dark';
     const html = document.documentElement;
