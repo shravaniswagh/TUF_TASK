@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { WallCalendar } from './WallCalendar';
 import { PinData } from './Pin';
 import { useTheme } from 'next-themes';
+import { THEME_CONFIG } from '../theme-config';
 
 const CALENDAR_COLORS = [
   '#FFFFFF', '#FFFBEB', '#FEF3C7', '#FDE68A',
@@ -118,11 +119,11 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
       <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-[60] pointer-events-none">
         <div
           className="w-5 h-5 rounded-full shadow-md"
-          style={{ backgroundColor: '#EF4444' }}
+          style={{ backgroundColor: THEME_CONFIG.accent.primary }}
         />
         <div
           className="w-1.5 h-2 rounded-b-sm mx-auto"
-          style={{ backgroundColor: '#EF4444', opacity: 0.6 }}
+          style={{ backgroundColor: THEME_CONFIG.accent.primary, opacity: 0.6 }}
         />
       </div>
 

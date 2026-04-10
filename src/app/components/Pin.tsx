@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { THEME_CONFIG } from '../theme-config';
 import { Resizable } from 're-resizable';

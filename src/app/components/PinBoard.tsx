@@ -12,7 +12,7 @@ import {
   LogOut,
   Sun,
   Moon,
-  ChevronUp,
+  ChevronLeft,
   StickyNote,
   Calendar,
   Image as ImageIcon,
@@ -20,105 +20,63 @@ import {
   ListTodo,
   ClipboardList,
   Check,
+  Palette,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 
-const TYPE_COLORS: Record<string, string[]> = {
-  note:        ['#FFFBEB', '#EFF6FF', '#FDF4FF', '#F0FDF4', '#FFF1F2', '#FEF3C7', '#DBEAFE', '#FAE8FF', '#DCFCE7', '#FFE4E6'],
-  image:       ['#F0FDF4', '#ECFDF5', '#F0F9FF'],
-  countdown:   ['#FDF4FF', '#EFF6FF', '#FFF7ED'],
-  calendar:    ['#FFFFFF'],
-  'todo':      ['#F0FDF4', '#FEF3C7', '#EFF6FF'],
-  'daily-tasks': ['#FDF4FF', '#FFFBEB', '#F1F5F9'],
-};
-
-function getColor(type: PinData['type']): string {
-  const colors = TYPE_COLORS[type] || ['#FFFFFF'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
 interface DragState {
   id: string;
-  startMouseX: number;
-  startMouseY: number;
-  startPinX: number;
-  startPinY: number;
+  offsetX: number;
+  offsetY: number;
 }
 
 /**
- * Check if two rectangles overlap
+ * Adaptive Dot Contrast Engine
+ * Ensures visibility across all theme colors.
  */
-function rectanglesOverlap(
-  r1: { x: number; y: number; width: number; height: number },
-  r2: { x: number; y: number; width: number; height: number }
-): boolean {
-  return !(
-    r1.x + r1.width < r2.x ||
-    r2.x + r2.width < r1.x ||
-    r1.y + r1.height < r2.y ||
-    r2.y + r2.height < r1.y
-  );
-}
-
-/**
- * Scatter a new pin at a random position inside the canvas.
- * Pure freeform — no grid, no rows, no columns.
- * Avoids overlapping with calendar pins.
- */
-function scatterPosition(
-  width: number,
-  height: number,
-  canvasW: number,
-  canvasH: number,
-  calendarPins: PinData[]
-): { x: number; y: number } {
-  const MARGIN = 24;
-  const maxX = Math.max(MARGIN, canvasW - width - MARGIN);
-  const maxY = Math.max(MARGIN, canvasH - height - MARGIN);
-  
-  // Try up to 50 times to find a non-overlapping position
-  for (let attempt = 0; attempt < 50; attempt++) {
-    const pos = {
-      x: MARGIN + Math.random() * (maxX - MARGIN),
-      y: MARGIN + Math.random() * (maxY - MARGIN),
-    };
-    
-    const newRect = { ...pos, width, height };
-    const overlapsCalendar = calendarPins.some(cal => 
-      rectanglesOverlap(newRect, { x: cal.x, y: cal.y, width: cal.width, height: cal.height })
-    );
-    
-    if (!overlapsCalendar) {
-      return pos;
-    }
+function getAdaptiveDotColor(bgColor: string | null, resolvedTheme?: string) {
+  if (!bgColor) {
+    return resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
   }
   
-  // If we couldn't find a non-overlapping position after 50 attempts,
-  // place it on the right side of the canvas
-  return {
-    x: Math.max(MARGIN, canvasW - width - MARGIN),
-    y: MARGIN + Math.random() * (maxY - MARGIN),
-  };
+  try {
+    const hex = bgColor.replace('#', '');
+    let fullHex = hex;
+    if (hex.length === 3) {
+      fullHex = hex.split('').map(c => c + c).join('');
+    }
+    
+    const r = parseInt(fullHex.substring(0, 2), 16);
+    const g = parseInt(fullHex.substring(2, 4), 16);
+    const b = parseInt(fullHex.substring(4, 6), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // If background is dark, use light dots. If light, use dark dots.
+    return luminance < 0.45 
+      ? 'rgba(255, 255, 255, 0.2)' // Brighter dots for dark backgrounds
+      : 'rgba(0, 0, 0, 0.1)';      // Subtle dots for light backgrounds
+  } catch (e) {
+    return resolvedTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+  }
 }
 
 export function PinBoard({ boardId }: { boardId: string }) {
   const [pins, setPins] = useState<PinData[]>([]);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuView, setMenuView] = useState<'main' | 'theme'>('main');
+  const [boardColor, setBoardColor] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
-  const [boardColor, setBoardColor] = useState<string | null>(null);
-  const [showBoardColors, setShowBoardColors] = useState(false);
-  const { theme, resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
 
-  /* ── Persistence & Initial Calendar ──────────────────────────────── */
+  /* ── Persistence & Data Fetching ────────────────────────────────── */
   useEffect(() => {
     const fetchPins = async () => {
-      // Only show loading screen if we are actually switching boards
       if (prevBoardIdRef.current !== boardId) {
         setHasLoaded(false);
         prevBoardIdRef.current = boardId;
@@ -129,431 +87,284 @@ export function PinBoard({ boardId }: { boardId: string }) {
         let initialPins: PinData[] = [];
         if (docSnap.exists()) {
           const data = docSnap.data();
-            if (data.pins && data.pins.length > 0) {
-              initialPins = data.pins;
-            }
-            if (data.boardBackgroundColor) {
-              setBoardColor(data.boardBackgroundColor);
-            }
-          }
+          if (data.pins) initialPins = data.pins;
+          if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
+        }
         
+        // Ensure at least one calendar exists
         const hasCalendar = initialPins.some((p: PinData) => p.type === 'calendar');
         if (!hasCalendar) {
           const defaultCalendar: PinData = {
             id: 'calendar-default',
             type: 'calendar',
             content: '',
-            x: 40,
-            y: 40,
-            width: 480,
-            height: 600,
-            color: '#FFFFFF',
-            zIndex: 1000,
-            rotation: 0,
+            x: 40, y: 40, width: 480, height: 600,
+            color: '#FFFFFF', zIndex: 1000, rotation: 0,
           };
           initialPins = [defaultCalendar, ...initialPins];
         }
         setPins(initialPins);
         setHasLoaded(true);
       } catch (error) {
-        console.error('Failed to load pins from Firebase:', error);
+        console.error('Failed to load board:', error);
         setHasLoaded(true);
       }
     };
-    
     fetchPins();
-  }, [boardId, setTheme]);
+  }, [boardId]);
 
-  // Helper to remove undefined values which Firestore dislikes in arrays
-  const cleanPinForFirestore = (pin: PinData) => {
-    const cleaned: any = {};
-    Object.entries(pin).forEach(([key, value]) => {
-      if (value !== undefined) cleaned[key] = value;
-    });
-    return cleaned;
-  };
-
+  // Firestore sync logic with cleaning
   useEffect(() => {
     if (!hasLoaded) return;
-    
     const saveTimer = setTimeout(() => {
-      const cleanedPins = pins.map(cleanPinForFirestore);
-
+      const cleanedPins = pins.map(p => {
+        const cleaned: any = {};
+        Object.entries(p).forEach(([k, v]) => { if (v !== undefined) cleaned[k] = v; });
+        return cleaned;
+      });
       setDoc(doc(db, 'boards', boardId), { 
         pins: cleanedPins,
         boardBackgroundColor: boardColor,
         lastUpdated: new Date().toISOString()
-      }, { merge: true })
-        .catch(error => console.error('Failed to save pins to Firebase:', error));
+      }, { merge: true }).catch(err => console.error('Firestore save failed:', err));
     }, 1000);
     return () => clearTimeout(saveTimer);
   }, [pins, hasLoaded, boardId, boardColor]);
 
-  const handleToggleTheme = () => {
-    const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
+  /* ── Dragging Engine ────────────────────────────────────────────── */
+  const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
+    const pin = pins.find(p => p.id === id);
+    if (!pin) return;
+    setDragging({
+      id,
+      offsetX: e.clientX - pin.x,
+      offsetY: e.clientY - pin.y,
+    });
+  }, [pins]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging || !boardRef.current) return;
+    const newX = e.clientX - dragging.offsetX;
+    const newY = e.clientY - dragging.offsetY;
     
-    // Update local state immediately (next-themes handles localStorage automatically)
-    setTheme(newTheme);
-    setShowAddMenu(false);
+    setPins(prev => prev.map(p => 
+      p.id === dragging.id ? { ...p, x: newX, y: newY } : p
+    ));
+  }, [dragging]);
+
+  const handleMouseUp = useCallback(() => {
+    setDragging(null);
+  }, []);
+
+  /* ── Board Actions ───────────────────────────────────────────────── */
+  const addPin = (type: PinData['type']) => {
+    const newPin: PinData = {
+      id: `${type}-${Date.now()}`,
+      type,
+      content: type === 'todo' ? JSON.stringify([]) : '',
+      x: 100 + Math.random() * 200,
+      y: 100 + Math.random() * 200,
+      width: type === 'calendar' ? 480 : 300,
+      height: type === 'calendar' ? 600 : 300,
+      color: '#FFFFFF',
+      zIndex: Math.max(0, ...pins.map(p => p.zIndex ?? 1)) + 1,
+      rotation: (Math.random() - 0.5) * 4,
+    };
+    setPins([...pins, newPin]);
+    setShowMenu(false);
+  };
+
+  const updatePin = useCallback((id: string, updates: Partial<PinData>) => {
+    setPins(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)));
+  }, []);
+
+  const deletePin = useCallback((id: string) => {
+    setPins(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  const toggleThemeMode = () => {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   };
 
   const handleCopyBoardUrl = () => {
-    const url = `${window.location.origin}/?board=${boardId}`;
+    const url = `${window.location.host}/?board=${boardId}&web=true`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  /* ── Drag handling ───────────────────────────────────────────────── */
-  useEffect(() => {
-    if (!dragging) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const boardRect = boardRef.current?.getBoundingClientRect();
-      if (!boardRect) return;
-
-      const dx = e.clientX - dragging.startMouseX;
-      const dy = e.clientY - dragging.startMouseY;
-
-      setPins(prev => {
-        const calendarPins = prev.filter(p => p.type === 'calendar');
-        
-        return prev.map(p => {
-          if (p.id !== dragging.id) return p;
-          
-          // Calculate new position
-          let newX = Math.max(0, Math.min(dragging.startPinX + dx, boardRect.width - p.width));
-          let newY = Math.max(0, Math.min(dragging.startPinY + dy, boardRect.height - p.height));
-          
-          // If this is not a calendar pin, check for overlap with calendar
-          if (p.type !== 'calendar') {
-            const newRect = { x: newX, y: newY, width: p.width, height: p.height };
-            const overlapsCalendar = calendarPins.some(cal => 
-              rectanglesOverlap(newRect, { x: cal.x, y: cal.y, width: cal.width, height: cal.height })
-            );
-            
-            // If it overlaps, keep the previous position
-            if (overlapsCalendar) {
-              newX = p.x;
-              newY = p.y;
-            }
-          }
-          
-          return { ...p, x: newX, y: newY };
-        });
-      });
-    };
-
-    const handleMouseUp = () => setDragging(null);
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup',  handleMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup',  handleMouseUp);
-    };
-  }, [dragging]);
-
-  const handlePinDragStart = useCallback(
-    (id: string, e: React.MouseEvent) => {
-      const pin = pins.find(p => p.id === id);
-      if (!pin) return;
-      setDragging({
-        id,
-        startMouseX: e.clientX,
-        startMouseY: e.clientY,
-        startPinX: pin.x,
-        startPinY: pin.y,
-      });
-    },
-    [pins]
-  );
-
-  /* ── Add pin ─────────────────────────────────────────────────────── */
-  const addPin = (type: PinData['type']) => {
-    const boardRect = boardRef.current?.getBoundingClientRect();
-    if (!boardRect) return;
-
-    // Calendar & Lists get specialized default sizes
-    const width  = type === 'calendar' ? 480 : (type === 'todo' || type === 'daily-tasks') ? 280 : type === 'countdown' ? 200 : 240;
-    const height = type === 'calendar' ? 600 : (type === 'todo' || type === 'daily-tasks') ? 320 : type === 'countdown' ? 170 : 210;
-
-    const calendarPins = pins.filter(p => p.type === 'calendar');
-    const pos = scatterPosition(width, height, boardRect.width, boardRect.height, calendarPins);
-
-    const today     = new Date();
-    const endOfYear = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
-
-    const newPin: PinData = {
-      id:      Date.now().toString(),
-      type,
-      content: type === 'countdown' ? endOfYear : '',
-      label:   type === 'countdown' ? 'End of Year' : undefined,
-      x:       pos.x,
-      y:       pos.y,
-      width,
-      height,
-      color:   getColor(type),
-    };
-
-    setPins(prev => [...prev, newPin]);
-    setShowAddMenu(false);
-  };
-
-  const updatePin = useCallback(
-    (id: string, updates: Partial<PinData>) =>
-      setPins(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p))),
-    []
-  );
-
-  const deletePin = useCallback(
-    (id: string) => setPins(prev => prev.filter(p => p.id !== id)),
-    []
-  );
-
-  /* ── Render ──────────────────────────────────────────────────────── */
-  if (!hasLoaded) {
-    return null;
-  }
+  if (!hasLoaded) return null;
 
   return (
     <div
       ref={boardRef}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      className="w-full h-full relative"
       style={{
-        position:        'relative',
-        width:           '100%',
-        height:          '100%',
         backgroundColor: boardColor || 'var(--background)',
-        userSelect:      dragging ? 'none' : 'auto',
-        cursor:          dragging ? 'grabbing' : 'default',
-        // Layered background: dot-grid on top of background
-        backgroundImage: `
-          radial-gradient(circle, var(--dot-color) 1.5px, transparent 1.5px)
-        `,
-        backgroundSize:  '36px 36px',
+        backgroundImage: `radial-gradient(circle, ${getAdaptiveDotColor(boardColor, resolvedTheme)} 1.5px, transparent 1.5px)`,
+        backgroundSize: '36px 36px',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
-        transition: 'background-color 0.5s ease',
-        overflow:        'hidden',
+        transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+        overflow: 'hidden',
       }}
     >
-      {/* Pins — every pin is position:absolute via its own inline style */}
+      {/* ── Pins Render ───────────────────────────────────────────── */}
       {pins.map(pin => (
         pin.type === 'calendar' ? (
-          <CalendarPin
-            key={pin.id}
-            pin={pin}
-            boardId={boardId}
-            onUpdate={updatePin}
-            onDelete={deletePin}
-            onDragStart={handlePinDragStart}
+          <CalendarPin 
+            key={pin.id} 
+            pin={pin} 
+            boardId={boardId} 
+            onUpdate={updatePin} 
+            onDelete={deletePin} 
+            onDragStart={onDragStart}
             isDragging={dragging?.id === pin.id}
           />
         ) : (
-          <Pin
-            key={pin.id}
-            pin={pin}
+          <Pin 
+            key={pin.id} 
+            pin={pin} 
             boardId={boardId}
-            onUpdate={updatePin}
-            onDelete={deletePin}
-            onDragStart={handlePinDragStart}
+            onUpdate={updatePin} 
+            onDelete={deletePin} 
+            onDragStart={onDragStart}
             isDragging={dragging?.id === pin.id}
           />
         )
       ))}
 
-      {/* Empty state */}
-      <AnimatePresence>
-        {pins.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-3"
-          >
-            <div className="w-14 h-14 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
-              <StickyNote className="w-6 h-6 text-slate-400" />
-            </div>
-            <p className="text-slate-400 text-sm">
-              Click <span className="text-slate-600 font-medium">+</span> to drop a pin anywhere
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ── Floating Add Button (FAB) ──────────────────────────────── */}
-      <div
-        className="absolute bottom-6 right-6 flex flex-col items-end gap-2"
-        style={{ zIndex: 200 }}
-      >
+      {/* ── Floating Unified Menu ──────────────────────────────────── */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2">
         <AnimatePresence>
-          {showAddMenu && (
+          {showMenu && (
             <motion.div
-              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden w-48 mb-2 backdrop-blur-xl"
+              exit={{ opacity: 0, y: 15, scale: 0.95 }}
+              className="bg-white/95 dark:bg-slate-900/95 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden w-64 mb-2 backdrop-blur-xl"
             >
-              <div className="flex border-t border-slate-100 dark:border-slate-800 p-2 overflow-x-auto gap-2 bg-slate-50/50 dark:bg-slate-900/50 no-scrollbar">
-                {THEME_CONFIG.boardPalette.map((theme) => (
-                  <button
-                    key={theme.name}
-                    onClick={() => {
-                      setBoardColor(theme.color);
-                      if (theme.color) {
-                         // Heuristic: if it's a very light color, use light theme icons, if dark, use dark
-                         // But for now we just set the color
-                      }
-                    }}
-                    className={`flex-shrink-0 w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${boardColor === theme.color ? 'border-blue-500 scale-110 shadow-md' : 'border-slate-200 dark:border-slate-700'}`}
-                    style={{ backgroundColor: theme.color || (resolvedTheme === 'dark' ? '#050505' : '#f8fafc') }}
-                    title={theme.name}
-                  />
-                ))}
-              </div>
+              <AnimatePresence mode="wait">
+                {menuView === 'main' ? (
+                  /* ── MAIN MENU VIEW ── */
+                  <motion.div
+                    key="main-view"
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="p-2 grid grid-cols-2 gap-1 border-b border-slate-100 dark:border-slate-800">
+                      <button onClick={() => addPin('note')} className="flex flex-col items-center gap-1.5 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-500"><StickyNote className="w-4 h-4" /></div>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Note</span>
+                      </button>
+                      <button onClick={() => addPin('image')} className="flex flex-col items-center gap-1.5 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-500"><ImageIcon className="w-4 h-4" /></div>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Image</span>
+                      </button>
+                      <button onClick={() => addPin('todo')} className="flex flex-col items-center gap-1.5 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-500"><ListTodo className="w-4 h-4" /></div>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">To-Do</span>
+                      </button>
+                      <button onClick={() => addPin('calendar')} className="flex flex-col items-center gap-1.5 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900/40 flex items-center justify-center text-sky-500"><CalendarDays className="w-4 h-4" /></div>
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">Calendar</span>
+                      </button>
+                    </div>
 
-              <button
-                onClick={() => addPin('note')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-              >
-                <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                  <StickyNote className="w-3.5 h-3.5 text-amber-500" />
-                </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Note</span>
-              </button>
-              <button
-                onClick={() => addPin('image')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-              >
-                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                  <ImageIcon className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Image</span>
-              </button>
-              <button
-                onClick={() => addPin('countdown')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-              >
-                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Countdown</span>
-              </button>
-              <button
-                onClick={() => addPin('calendar')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-              >
-                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
-                  <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
-                </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Calendar</span>
-              </button>
-              <button
-                onClick={() => addPin('todo')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-              >
-                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                  <ListTodo className="w-3.5 h-3.5 text-emerald-500" />
-                </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">To-Do List</span>
-              </button>
-              <button
-                onClick={() => addPin('daily-tasks')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-              >
-                <div className="w-6 h-6 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
-                  <ClipboardList className="w-3.5 h-3.5 text-rose-500" />
-                </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Daily Tasks</span>
-              </button>
-              <button
-                onClick={handleCopyBoardUrl}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-              >
-                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-                  {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />}
-                </div>
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{copied ? 'Copied!' : 'Copy Site URL'}</span>
-              </button>
-              <button
-                onClick={handleToggleTheme}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800 group"
-              >
-                <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
-                </div>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white">Change Theme</span>
-              </button>
-              
-              <button
-                onClick={() => signOut(auth)}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-              >
-                <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                  <LogOut className="w-3.5 h-3.5 text-rose-500" />
-                </div>
-                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Sign Out</span>
-              </button>
-              <button
-                onClick={() => {
-                  signOut(auth);
-                  window.history.replaceState({}, '', `/`);
-                }}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-50 transition-colors text-left border-t border-slate-100 group"
-              >
-                <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
-                  <LogOut className="w-3.5 h-3.5 text-rose-500 group-hover:text-rose-600" />
-                </div>
-                <span className="text-sm font-medium text-rose-500 group-hover:text-rose-600">Sign Out</span>
-              </button>
+                    <div className="p-1">
+                      <button onClick={() => addPin('daily-tasks')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors group">
+                        <div className="w-6 h-6 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform"><ClipboardList className="w-3.5 h-3.5" /></div>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Daily Tasks Sync</span>
+                      </button>
+                      <button onClick={handleCopyBoardUrl} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors">
+                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-500">{copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}</div>
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{copied ? 'Copied URL!' : 'Share Board'}</span>
+                      </button>
+                      <button onClick={() => setMenuView('theme')} className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors group">
+                        <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:rotate-12 transition-transform"><Palette className="w-3.5 h-3.5" /></div>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white">Change Theme</span>
+                      </button>
+                    </div>
+
+                    <button onClick={() => signOut(auth)} className="w-full px-5 py-4 flex items-center gap-3 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors border-t border-slate-100 dark:border-slate-800 group">
+                      <div className="w-6 h-6 flex items-center justify-center group-hover:-translate-x-1 transition-transform"><LogOut className="w-4 h-4 text-rose-500" /></div>
+                      <span className="text-sm font-bold text-rose-600">Sign Out</span>
+                    </button>
+                  </motion.div>
+                ) : (
+                  /* ── THEME MENU VIEW ── */
+                  <motion.div
+                    key="theme-view"
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 15 }}
+                    transition={{ duration: 0.2 }}
+                    className="p-4"
+                  >
+                    <div className="flex items-center gap-3 mb-5">
+                      <button onClick={() => setMenuView('main')} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-500">
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-400">Board Theme</span>
+                    </div>
+
+                    <button onClick={toggleThemeMode} className="w-full px-4 py-3.5 flex items-center justify-between bg-slate-50 dark:bg-slate-800 rounded-xl mb-6 shadow-inner border border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center gap-3">
+                        {resolvedTheme === 'dark' ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{resolvedTheme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                      </div>
+                      <div className={`w-10 h-5 rounded-full relative transition-colors ${resolvedTheme === 'dark' ? 'bg-indigo-500' : 'bg-slate-300'}`}>
+                        <div className={`absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all ${resolvedTheme === 'dark' ? 'left-6' : 'left-1'}`} />
+                      </div>
+                    </button>
+
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Background Palette</span>
+                      <div className="grid grid-cols-4 gap-2.5">
+                        {(resolvedTheme === 'dark' ? THEME_CONFIG.boardPalettes.dark : THEME_CONFIG.boardPalettes.light).map((t) => (
+                          <button
+                            key={t.name}
+                            onClick={() => setBoardColor(t.color)}
+                            className={`w-12 h-12 rounded-xl border-2 transition-all hover:scale-105 active:scale-95 ${boardColor === t.color ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent'}`}
+                            style={{ backgroundColor: t.color || (resolvedTheme === 'dark' ? '#050505' : '#f8fafc') }}
+                            title={t.name}
+                          >
+                             {boardColor === t.color && <Check className="w-4 h-4 mx-auto text-indigo-500 drop-shadow-sm" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <div className="flex items-center gap-3">
-          {!showAddMenu && (
-            <motion.span 
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="text-sm font-medium text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-full shadow-sm backdrop-blur-sm pointer-events-none"
-            >
-              Add your pin to the motivation board
-            </motion.span>
-          )}
-          
-          <motion.button
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.94 }}
-            onClick={() => setShowAddMenu(v => !v)}
-            style={{ 
-              backgroundColor: THEME_CONFIG.accent.primary,
-              boxShadow: `0 0 15px ${THEME_CONFIG.accent.glow}`
-            }}
-            className="w-14 h-14 text-white rounded-full flex items-center justify-center transition-colors relative"
-          >
-            <span 
-              style={{ backgroundColor: THEME_CONFIG.accent.primary }}
-              className="absolute inset-0 rounded-full animate-ping opacity-20"
-            ></span>
-            <motion.div
-              animate={{ rotate: showAddMenu ? 45 : 0 }}
-              transition={{ duration: 0.18 }}
-            >
-              <Plus className="w-6 h-6" />
-            </motion.div>
-          </motion.button>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => {
+            setShowMenu(!showMenu);
+            if (!showMenu) setMenuView('main'); // Reset to main when opening
+          }}
+          style={{ 
+            backgroundColor: THEME_CONFIG.accent.primary, 
+            boxShadow: `0 10px 40px ${THEME_CONFIG.accent.glow}` 
+          }}
+          className="w-16 h-16 text-white rounded-full flex items-center justify-center transition-all relative z-[10000]"
+        >
+          <span style={{ backgroundColor: THEME_CONFIG.accent.primary }} className="absolute inset-0 rounded-full animate-ping opacity-20 pointer-events-none" />
+          <motion.div animate={{ rotate: showMenu ? 45 : 0 }} transition={{ duration: 0.2 }}>
+            <Plus className="w-8 h-8" />
+          </motion.div>
+        </motion.button>
       </div>
-
-      {/* Backdrop to close menu */}
-      {showAddMenu && (
-        <div
-          className="absolute inset-0"
-          style={{ zIndex: 199 }}
-          onClick={() => setShowAddMenu(false)}
-        />
-      )}
     </div>
   );
 }

@@ -7,7 +7,6 @@
 
 export const THEME_CONFIG = {
   // ── Global Backgrounds ──────────────────────────────────────────
-  // These affect the main screen background
   backgrounds: {
     light: '#f8fafc', // Soft Slate-50
     dark: '#050505',  // Premium Deep Black
@@ -20,14 +19,12 @@ export const THEME_CONFIG = {
   },
 
   // ── Background Dot Grid ────────────────────────────────────────
-  // The subtle dots on the board
   dots: {
-    light: 'rgba(0, 0, 0, 0.06)',
-    dark: 'rgba(255, 255, 255, 0.08)',
+    light: 'rgba(0, 0, 0, 0.08)',
+    dark: 'rgba(255, 255, 255, 0.12)',
   },
 
   // ── Accent Colors ──────────────────────────────────────────────
-  // Used for the + button and primary highlights
   accent: {
     primary: '#3b82f6', // Bright Blue
     hover: '#2563eb',   // Deeper Blue
@@ -35,37 +32,42 @@ export const THEME_CONFIG = {
   },
 
   // ── Pin Header Colors ──────────────────────────────────────────
-  // The small indicator at the top of each pin type
   pinHeads: {
     note: '#F59E0B',
     image: '#10B981',
     countdown: '#6366F1',
     calendar: '#6366F1',
     todo: '#10B981',
-    'daily-tasks': '#F43F5E',
+    'daily-tasks': '#6366F1', // Professional Indigo instead of Rose
   },
 
   // ── Pin Palette (The colors in the palette menu) ───────────────
-  // You can add or remove colors here
   pinPalette: [
-    '#FFFFFF', '#F8FAFC', '#F1F5F9', // Premium Whites/Grays
-    '#FFFBEB', '#FEF3C7', '#FDF4FF', // Warm/Soft Clean
-    '#E2E8F0', '#94A3B8', '#475569', // Professional Slates
-    '#334155', '#1E293B', '#0F172A', // Deep Midnights
-    '#020617', '#18181B', '#27272A', // Obsidian/Zincs
-    '#3F3F46', '#52525B', '#71717A', // Industrial Grays
+    '#FFFFFF', '#F8FAFC', '#F1F5F9', 
+    '#FFFBEB', '#FEF3C7', '#FDF4FF', 
+    '#E2E8F0', '#94A3B8', '#475569', 
+    '#334155', '#1E293B', '#0F172A', 
+    '#020617', '#18181B', '#27272A', 
+    '#3F3F46', '#52525B', '#71717A', 
   ],
 
-  // ── Board Palette (Pastel Backgrounds) ─────────────────────────
-  boardPalette: [
-    { name: 'Default', color: null },
-    { name: 'Rose', color: '#FFF1F2' },   // Soft Pink
-    { name: 'Lavender', color: '#F5F3FF' }, // Soft Purple
-    { name: 'Matcha', color: '#F0FDF4' },   // Mint Green
-    { name: 'Sky', color: '#EFF6FF' },      // Soft Blue
-    { name: 'Cream', color: '#FEFCE8' },    // Soft Yellow
-    { name: 'Slate', color: '#F8FAFC' },    // Light Slate
-    { name: 'Midnight', color: '#0F172A' }, // Deep Navy
-    { name: 'Obsidian', color: '#050505' }, // Deep Black
-  ]
+  // ── Board Palettes (Mode-Specific) ─────────────────────────────
+  boardPalettes: {
+    light: [
+      { name: 'Default', color: null },
+      { name: 'Paper', color: '#F3F4F6' },    // Clean Warm Gray (Default Look)
+      { name: 'Azure', color: '#F0F9FF' },    // Premium Soft Blue
+      { name: 'Sakura', color: '#FFF5F7' },   // Premium Soft Pink
+      { name: 'Lavender', color: '#F9F5FF' }, // Premium Soft Purple
+      { name: 'Matcha', color: '#F7FEE7' },   // Premium Soft Green
+    ],
+    dark: [
+      { name: 'Default', color: null },
+      { name: 'Midnight', color: '#0F172A' }, // Deep Professional Navy
+      { name: 'Forest', color: '#064E3B' },   // Deep Forest Green
+      { name: 'Merlot', color: '#2E1065' },   // Deep Royal Purple
+      { name: 'Slate', color: '#1E293B' },    // Rich Charcoal Gray
+      { name: 'Obsidian', color: '#050505' }, // Deep Pure Black
+    ]
+  }
 };
