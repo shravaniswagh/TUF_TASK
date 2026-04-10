@@ -798,7 +798,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 {currentTime.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
               </div>
               <div 
-                className="mt-1 opacity-60 font-bold uppercase tracking-[0.2em] text-[10px]"
+                className={`mt-1 font-bold uppercase tracking-[0.2em] text-[10px] ${pin.textColor ? '' : 'opacity-60'}`}
                 style={{ 
                   color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor),
                   fontFamily: pin.fontFamily || 'system-ui'
@@ -807,7 +807,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 {currentTime.toLocaleDateString([], { weekday: 'long' })}
               </div>
               <div 
-                className="mt-0.5 opacity-40 font-medium text-[9px] uppercase tracking-widest"
+                className={`mt-0.5 font-medium text-[9px] uppercase tracking-widest ${pin.textColor ? '' : 'opacity-40'}`}
                 style={{ 
                   color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor),
                   fontFamily: pin.fontFamily || 'system-ui'
