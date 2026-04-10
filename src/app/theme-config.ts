@@ -43,12 +43,18 @@ export const THEME_CONFIG = {
 
   // ── Pin Palette (The colors in the palette menu) ───────────────
   pinPalette: [
-    // Tier 1: Soft Premium Neutrals
-    '#FAFAFA', '#FFFBEB', '#FFF5F7', '#F0F9FF', '#F9F5FF', '#F0FDF4',
-    // Tier 2: Vibrant Statement Colors
-    '#FBBF24', '#10B981', '#3B82F6', '#6366F1', '#8B5CF6', '#F43F5E',
-    // Tier 3: Deep Professional Accents (Lush darks)
-    '#334155', '#111827', '#064E3B', '#4C1D95', '#1E1B4B', '#111111',
+    // Column 1: Reds/Pinks (Soft -> Deep)
+    '#FFF1F2', '#F43F5E', '#BE123C', '#881337',
+    // Column 2: Ambers/Yellows (Soft -> Deep)
+    '#FFFBEB', '#FBBF24', '#B45309', '#78350F',
+    // Column 3: Greens/Emeralds (Soft -> Deep)
+    '#F0FDF4', '#10B981', '#065F46', '#064E3B',
+    // Column 4: Blues/Azures (Soft -> Deep)
+    '#EFF6FF', '#3B82F6', '#1E40AF', '#172554',
+    // Column 5: Purples/Violets (Soft -> Deep)
+    '#F5F3FF', '#8B5CF6', '#5B21B6', '#2E1065',
+    // Column 6: Neutrals (Soft -> Deep)
+    '#FAFAFA', '#E2E8F0', '#475569', '#111111',
   ],
 
   // ── Board Palettes (Mode-Specific) ─────────────────────────────
