@@ -44,7 +44,7 @@ export const THEME_CONFIG = {
   // ── Pin Palette (The colors in the palette menu) ───────────────
   pinPalette: [
     '#FFFFFF', '#F8FAFC', '#F1F5F9', 
-    '#FFFBEB', '#FEF3C7', '#FDF4FF', 
+    '#FFFBEB', '#FEF3C7', '#F2E3F5', 
     '#E2E8F0', '#475569', 
     '#334155', '#1E293B', '#0F172A', 
     '#020617', '#18181B', '#27272A', 
