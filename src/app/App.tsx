@@ -47,7 +47,7 @@ export default function App() {
   // 1. If it's pure wallpaper mode (URL has board but NO web flag), bypass entirely
   if (isWallpaperMode) {
     return (
-      <div className="relative w-screen h-screen overflow-hidden bg-background text-foreground">
+      <div className="relative w-screen h-screen overflow-hidden">
         <PinBoard boardId={boardId} />
       </div>
     );
@@ -56,7 +56,7 @@ export default function App() {
   // 2. Waiting for Firebase Auth
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#050505] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -69,7 +69,7 @@ export default function App() {
 
   // 4. Web user logged in
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-background text-foreground">
+    <div className="relative w-screen h-screen overflow-hidden">
       <PinBoard boardId={boardId} />
     </div>
   );

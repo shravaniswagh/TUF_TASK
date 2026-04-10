@@ -32,7 +32,7 @@ interface DragState {
 }
 
 /**
- * Premium Adaptive Grid Contrast Engine
+ * Robust Adaptive Grid Contrast Engine
  */
 function getAdaptiveDotColor(bgColor: string | null, isDark: boolean) {
   if (!bgColor) {
@@ -64,10 +64,27 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
 
-  // Sync mounted state for hydration safety
+  // 1. Sync mounted state for hydration safety
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 2. FORCE SYSTEM LOCK: Manually synchronize DOM classes and body backgrounds
+  // This acts as a 'fail-safe' for next-themes to ensure Dark Mode stays locked.
+  useEffect(() => {
+    if (!mounted) return;
+    const isDarkNow = resolvedTheme === 'dark';
+    const html = document.documentElement;
+    const body = document.body;
+
+    if (isDarkNow) {
+      html.classList.add('dark');
+      body.style.backgroundColor = THEME_CONFIG.backgrounds.dark;
+    } else {
+      html.classList.remove('dark');
+      body.style.backgroundColor = THEME_CONFIG.backgrounds.light;
+    }
+  }, [resolvedTheme, mounted]);
 
   const isDark = mounted && resolvedTheme === 'dark';
 
@@ -85,7 +102,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
           if (data.pins) setPins(data.pins);
           if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
           
-          // FORCE THEME LOCK: Read from database and apply immediately
+          // FORCE THEME LOCK: Apply from database immediately
           if (data.theme) {
             setTheme(data.theme);
           }
@@ -167,7 +184,10 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
-  /* ── Palette Rendering Logic ────────────────────────────────── */
+  /* ── Zero-Latency Board Logic ──────────────────────────────── */
+  // Direct Hex Logic: We use the actual hex codes from theme-config to bypass CSS var latency.
+  const baseBg = isDark ? THEME_CONFIG.backgrounds.dark : THEME_CONFIG.backgrounds.light;
+  
   const currentBoardBg = isDark 
     ? (THEME_CONFIG.boardPalettes.dark.some(p => p.color === boardColor) ? boardColor : null)
     : (THEME_CONFIG.boardPalettes.light.some(p => p.color === boardColor) ? boardColor : null);
@@ -180,9 +200,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className={`w-full h-full relative transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+      className={`w-full h-full relative transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
       style={{
-        backgroundColor: currentBoardBg || 'var(--background)',
+        backgroundColor: currentBoardBg || baseBg, // Use local baseBg hex directly
         backgroundImage: `radial-gradient(circle, ${getAdaptiveDotColor(currentBoardBg, isDark)} 1.5px, transparent 1.5px)`,
         backgroundSize: '36px 36px',
         backgroundAttachment: 'fixed',
@@ -222,7 +242,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
         )
       ))}
 
-      {/* ── Premium Action Menu (Database-Synced) ────────────────── */}
+      {/* ── Actions Menu ───────────────────────────────────────────── */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
         <AnimatePresence>
           {showAddMenu && (
@@ -256,13 +276,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
                       <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Settings</span>
                     </div>
 
-                    <button onClick={toggleTheme} className="w-full p-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-4 border border-slate-100 dark:border-slate-800 shadow-sm border-transparent group">
+                    <button onClick={toggleTheme} className="w-full p-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-4 border border-slate-100 dark:border-slate-800 shadow-sm transition-all active:scale-95 group">
                       <div className="flex items-center gap-2">
                         {isDark ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
                         <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
                       </div>
                       <div className={`w-8 h-4.5 rounded-full relative transition-colors ${isDark ? 'bg-indigo-500' : 'bg-slate-300'}`}>
-                        <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full transition-all ${isDark ? 'left-4.25' : 'left-0.75'}`} />
+                        <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${isDark ? 'left-4.25' : 'left-0.75'}`} />
                       </div>
                     </button>
 
@@ -274,7 +294,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                             key={t.name}
                             onClick={() => setBoardColor(t.color)}
                             className={`w-9 h-9 rounded-lg border-2 transition-all hover:scale-105 active:scale-95 flex items-center justify-center ${boardColor === t.color ? 'border-indigo-500 shadow-sm' : 'border-transparent'}`}
-                            style={{ backgroundColor: t.color || (isDark ? '#050505' : '#ffffff') }}
+                            style={{ backgroundColor: t.color || baseBg }}
                           >
                             {boardColor === t.color && <Check className="w-3.5 h-3.5 text-indigo-500" />}
                           </button>
