@@ -293,7 +293,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
             }}
             headerImage={pin.headerImage}
             curveColor={pin.curveColor}
-            backgroundColor={theme === 'dark' ? '#ffffff' : (pin.color || '#ffffff')}
+            backgroundColor={isDarkNow ? '#ffffff' : (pin.color || '#ffffff')}
             zoomLevel={zoomLevel}
             isDark={isDarkNow}
           />
