@@ -43,18 +43,12 @@ export const THEME_CONFIG = {
 
   // ── Pin Palette (The colors in the palette menu) ───────────────
   pinPalette: [
-    // Column 1: Reds/Pinks (Soft -> Deep)
-    '#FFF1F2', '#F43F5E', '#BE123C', '#881337',
-    // Column 2: Ambers/Yellows (Soft -> Deep)
-    '#FFFBEB', '#FBBF24', '#B45309', '#78350F',
-    // Column 3: Greens/Emeralds (Soft -> Deep)
-    '#F0FDF4', '#10B981', '#065F46', '#064E3B',
-    // Column 4: Blues/Azures (Soft -> Deep)
-    '#EFF6FF', '#3B82F6', '#1E40AF', '#172554',
-    // Column 5: Purples/Violets (Soft -> Deep)
-    '#F5F3FF', '#8B5CF6', '#5B21B6', '#2E1065',
-    // Column 6: Neutrals (Soft -> Deep)
-    '#FAFAFA', '#E2E8F0', '#475569', '#111111',
+    // Weight 1: Luminous Pastels (Level 50-100)
+    '#FFF1F2', '#FFFBEB', '#F0FDF4', '#EFF6FF', '#F5F3FF', '#FAFAFA',
+    // Weight 2: Soft Vibrant (Level 300)
+    '#FDA4AF', '#FCD34D', '#6EE7B7', '#93C5FD', '#C4B5FD', '#CBD5E1',
+    // Weight 3: Rich Premium (Level 500-600)
+    '#F43F5E', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#64748B',
   ],
 
   // ── Board Palettes (Mode-Specific) ─────────────────────────────
