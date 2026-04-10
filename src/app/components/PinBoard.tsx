@@ -60,7 +60,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [boardColor, setBoardColor] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
-  const { setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme, theme } = useTheme();
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
 
@@ -84,6 +84,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
           const data = docSnap.data();
           if (data.pins) setPins(data.pins);
           if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
+          
+          // FORCE THEME LOCK: Read from database and apply immediately
+          if (data.theme) {
+            setTheme(data.theme);
+          }
         }
         setHasLoaded(true);
       } catch (err) {
@@ -92,8 +97,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
       }
     };
     fetchPins();
-  }, [boardId]);
+  }, [boardId, setTheme]);
 
+  // Persistent Save
   useEffect(() => {
     if (!hasLoaded) return;
     const timer = setTimeout(() => {
@@ -105,11 +111,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
       setDoc(doc(db, 'boards', boardId), {
         pins: cleaned,
         boardBackgroundColor: boardColor,
+        theme: theme, // Save current theme to database
         lastUpdated: new Date().toISOString(),
       }, { merge: true }).catch(console.error);
     }, 1200);
     return () => clearTimeout(timer);
-  }, [pins, hasLoaded, boardId, boardColor]);
+  }, [pins, hasLoaded, boardId, boardColor, theme]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
   const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
@@ -160,8 +167,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
-  /* ── Palette Restoration ────────────────────────────────────── */
-  // Determine final board background (respect theme constraints)
+  /* ── Palette Rendering Logic ────────────────────────────────── */
   const currentBoardBg = isDark 
     ? (THEME_CONFIG.boardPalettes.dark.some(p => p.color === boardColor) ? boardColor : null)
     : (THEME_CONFIG.boardPalettes.light.some(p => p.color === boardColor) ? boardColor : null);
@@ -216,7 +222,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
         )
       ))}
 
-      {/* ── Premium Action Menu (Restored Palette) ────────────────── */}
+      {/* ── Premium Action Menu (Database-Synced) ────────────────── */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
         <AnimatePresence>
           {showAddMenu && (
@@ -250,7 +256,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                       <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Settings</span>
                     </div>
 
-                    <button onClick={toggleTheme} className="w-full p-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-4 border border-slate-100 dark:border-slate-800">
+                    <button onClick={toggleTheme} className="w-full p-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-4 border border-slate-100 dark:border-slate-800 shadow-sm border-transparent group">
                       <div className="flex items-center gap-2">
                         {isDark ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
                         <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
@@ -267,7 +273,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                           <button
                             key={t.name}
                             onClick={() => setBoardColor(t.color)}
-                            className={`w-9 h-9 rounded-lg border-2 transition-all hover:scale-105 flex items-center justify-center ${boardColor === t.color ? 'border-indigo-500 shadow-sm' : 'border-transparent'}`}
+                            className={`w-9 h-9 rounded-lg border-2 transition-all hover:scale-105 active:scale-95 flex items-center justify-center ${boardColor === t.color ? 'border-indigo-500 shadow-sm' : 'border-transparent'}`}
                             style={{ backgroundColor: t.color || (isDark ? '#050505' : '#ffffff') }}
                           >
                             {boardColor === t.color && <Check className="w-3.5 h-3.5 text-indigo-500" />}
@@ -319,7 +325,7 @@ function MenuBtn({ icon, bg, label, onClick, divider = false, textClass = "text-
   return (
     <button
       onClick={onClick}
-      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ${divider ? 'border-t border-slate-100 dark:border-slate-800' : ''}`}
+      className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ${divider ? 'border-t border-slate-100 dark:border-slate-800' : ''} group`}
     >
       <div className={`w-6 h-6 rounded-full ${bg} flex items-center justify-center transition-transform group-hover:scale-110`}>
         {icon}
