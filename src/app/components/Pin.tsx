@@ -436,7 +436,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
               </div>
             )}
             {/* Color picker */}
-            {(pin.type === 'note' || pin.type === 'image' || pin.type === 'todo' || pin.type === 'daily-tasks' || pin.type === 'countdown') && (
+            {(pin.type === 'note' || pin.type === 'image' || pin.type === 'todo' || pin.type === 'daily-tasks' || pin.type === 'countdown' || pin.type === 'clock') && (
               <div className="relative">
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
