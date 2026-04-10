@@ -3,6 +3,95 @@ import { auth } from '../../firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { motion, AnimatePresence } from 'motion/react';
 import { Lock, Mail, User, ArrowRight, Loader2 } from 'lucide-react';
+import { useRef, useEffect } from 'react';
+
+function InteractiveGrid() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mouseRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    };
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    const dots: { x: number; y: number; baseSize: number }[] = [];
+    const spacing = 32;
+
+    for (let x = 0; x < width + spacing; x += spacing) {
+      for (let y = 0; y < height + spacing; y += spacing) {
+        dots.push({ x, y, baseSize: 1.5 });
+      }
+    }
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+      const isDark = document.documentElement.classList.contains('dark');
+      ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+      dots.forEach((dot) => {
+        const dx = mouseRef.current.x - dot.x;
+        const dy = mouseRef.current.y - dot.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const radius = 100;
+
+        let size = dot.baseSize;
+        let opacity = 0.1;
+
+        if (dist < radius) {
+          const force = (radius - dist) / radius;
+          size = dot.baseSize + force * 2.5;
+          opacity = 0.1 + force * 0.4;
+          ctx.fillStyle = isDark 
+            ? `rgba(96, 165, 250, ${opacity})` 
+            : `rgba(59, 130, 246, ${opacity})`;
+        } else {
+          ctx.fillStyle = isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`;
+        }
+
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    render();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 pointer-events-none z-0"
+    />
+  );
+}
 
 export function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -30,11 +119,13 @@ export function Auth() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[var(--app-bg-light,theme(colors.slate.50))] dark:bg-[var(--app-bg-dark,theme(colors.slate.950))] p-4 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 relative overflow-hidden">
+      <InteractiveGrid />
+      
       {/* Decorative Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
+      <div className="absolute inset-0 pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/5 blur-[120px] rounded-full" />
       </div>
 
       <motion.div 
