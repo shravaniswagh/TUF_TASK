@@ -430,32 +430,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                         <option value="24px">Extra Large</option>
                         <option value="32px">Huge</option>
                       </select>
-
-                      <label className="text-slate-600 block mb-1 text-xs">Text Color:</label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {[
-                          { name: 'Auto', value: undefined },
-                          { name: 'Black', value: '#000000' },
-                          { name: 'White', value: '#FFFFFF' },
-                          { name: 'Blue', value: '#3B82F6' },
-                          { name: 'Rose', value: '#F43F5E' },
-                          { name: 'Emerald', value: '#10B981' },
-                          { name: 'Amber', value: '#F59E0B' },
-                          { name: 'Indigo', value: '#6366F1' },
-                        ].map((c) => (
-                          <button
-                            key={c.name}
-                            onClick={() => onUpdate(pin.id, { textColor: c.value })}
-                            className={`w-5 h-5 rounded-full border-2 transition-all hover:scale-110 ${
-                              pin.textColor === c.value || (!pin.textColor && !c.value)
-                                ? 'border-indigo-500 ring-2 ring-indigo-100' 
-                                : 'border-transparent'
-                            }`}
-                            style={{ backgroundColor: c.value || (isDark ? '#FFFFFF' : '#000000') }}
-                            title={c.name}
-                          />
-                        ))}
-                      </div>
                     </div>
                   </div>
                 )}
@@ -473,21 +447,79 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 </button>
                 {showColorPicker && (
                   <div
-                    className={`${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} absolute top-8 right-0 rounded-xl shadow-2xl border p-3 grid grid-cols-6 gap-2 z-50 animate-in fade-in zoom-in duration-150`}
+                    className={`${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} absolute top-8 right-0 rounded-2xl shadow-2xl border p-4 z-50 animate-in fade-in zoom-in duration-150 w-72`}
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.nativeEvent.stopImmediatePropagation();
                     }}
                   >
-                    {NOTE_COLORS.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => handleColorChange(color)}
-                        className={`w-6 h-6 rounded-full border transition-all hover:scale-125 hover:shadow-lg ${color === '#FFFFFF' ? 'border-slate-200' : 'border-black/5'}`}
-                        style={{ backgroundColor: color }}
-                        title={color}
-                      />
-                    ))}
+                    <div className="space-y-4">
+                      {/* Background Section */}
+                      <div>
+                        <div className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2.5 flex items-center gap-2">
+                          <Sun className="w-3 h-3" />
+                          Pin Background
+                        </div>
+                        <div className="grid grid-cols-6 gap-2">
+                          {NOTE_COLORS.map((color) => (
+                            <button
+                              key={color}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={() => onUpdate(pin.id, { color })}
+                              className={`w-6 h-6 rounded-full border transition-all hover:scale-125 hover:shadow-lg ${color === '#FFFFFF' ? 'border-slate-200' : 'border-black/5'} ${pin.color === color ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900' : ''}`}
+                              style={{ backgroundColor: color }}
+                              title={color}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-slate-100 dark:border-slate-800" />
+
+                      {/* Text Color Section */}
+                      <div>
+                        <div className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2.5 flex items-center gap-2">
+                          <Type className="w-3 h-3" />
+                          Text Color
+                        </div>
+                        <div className="grid grid-cols-7 gap-2">
+                          {[
+                            { name: 'Auto', value: undefined },
+                            { name: 'Black', value: '#000000' },
+                            { name: 'White', value: '#FFFFFF' },
+                            { name: 'Blue', value: '#2563EB' },
+                            { name: 'Rose', value: '#E11D48' },
+                            { name: 'Emerald', value: '#059669' },
+                            { name: 'Amber', value: '#D97706' },
+                            { name: 'Indigo', value: '#4F46E5' },
+                            { name: 'Violet', value: '#7C3AED' },
+                            { name: 'Slate', value: '#475569' },
+                            { name: 'Cherry', value: '#9F1239' },
+                            { name: 'Forest', value: '#064E3B' },
+                            { name: 'Navy', value: '#1E3A8A' },
+                            { name: 'Plum', value: '#581C87' },
+                          ].map((c) => (
+                            <button
+                              key={c.name}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={() => onUpdate(pin.id, { textColor: c.value })}
+                              className={`w-6 h-6 rounded-lg border-2 transition-all hover:scale-110 flex items-center justify-center ${
+                                pin.textColor === c.value || (!pin.textColor && !c.value)
+                                  ? 'border-indigo-500 shadow-sm' 
+                                  : 'border-transparent'
+                              }`}
+                              style={{ backgroundColor: c.value || (isDark ? '#F1F5F9' : '#0F172A') }}
+                              title={c.name}
+                            >
+                              {(pin.textColor === c.value || (!pin.textColor && !c.value)) && (
+                                <div className={`w-1.5 h-1.5 rounded-full ${c.value === '#FFFFFF' ? 'bg-slate-900' : 'bg-white'}`} />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -534,26 +566,25 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                     }
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className={`w-full h-full resize-none outline-none bg-transparent placeholder-slate-400 leading-relaxed custom-scrollbar ${getContrastColor(bgColor)}`}
+                  className="w-full h-full resize-none outline-none bg-transparent placeholder-slate-400 leading-relaxed custom-scrollbar"
                   placeholder="Pin your motivation here..."
                   style={{
                     fontFamily: pin.fontFamily || 'system-ui',
-                    fontSize: pin.fontSize || '14px',
+                    fontSize: pin.fontSize || '16px',
+                    color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : '#334155'),
                   }}
                 />
               ) : (
                 <div
                   onClick={() => setIsEditingNote(true)}
-                  className={`w-full h-full cursor-text whitespace-pre-wrap leading-relaxed overflow-auto custom-scrollbar ${getContrastColor(bgColor)}`}
+                  className="h-full w-full overflow-auto whitespace-pre-wrap break-words cursor-text custom-scrollbar px-1"
                   style={{
-                    minHeight: 40,
                     fontFamily: pin.fontFamily || 'system-ui',
-                    fontSize: pin.fontSize || '14px',
+                    fontSize: pin.fontSize || '16px',
+                    color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : '#334155'),
                   }}
                 >
-                  {pin.content || (
-                    <span className="text-slate-400">Pin your motivation ✨</span>
-                  )}
+                  {pin.content || <span className="opacity-20 italic">Tap to write a note...</span>}
                 </div>
               )}
             </div>
@@ -664,11 +695,17 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
             <div className="h-full flex flex-col items-center justify-center gap-1">
               <div
                 className="text-5xl tabular-nums"
-                style={{ color: getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor, fontWeight: 700 }}
+                style={{ 
+                  color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor), 
+                  fontWeight: 700 
+                }}
               >
                 {daysRemaining}
               </div>
-              <div className={`text-xs tracking-widest uppercase ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`}>
+              <div 
+                className={`text-xs tracking-widest uppercase ${pin.textColor ? '' : (getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500')}`}
+                style={{ color: pin.textColor }}
+              >
                 days left
               </div>
               {isEditingLabel ? (
@@ -682,19 +719,21 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                     if (e.key === 'Enter' || e.key === 'Escape') handleLabelSave();
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="mt-1 text-center text-slate-600 bg-transparent border-b border-slate-300 outline-none w-full max-w-[140px]"
+                  className="mt-1 text-center bg-transparent border-b border-slate-300 outline-none w-full max-w-[140px]"
                   style={{
                     fontFamily: pin.fontFamily || 'system-ui',
                     fontSize: pin.fontSize || '12px',
+                    color: pin.textColor || '#475569',
                   }}
                 />
               ) : (
                 <div
                   onClick={() => setIsEditingLabel(true)}
-                  className="mt-1 text-slate-600 cursor-text hover:text-slate-800 transition-colors text-center"
+                  className="mt-1 cursor-text transition-colors text-center"
                   style={{
                     fontFamily: pin.fontFamily || 'system-ui',
                     fontSize: pin.fontSize || '12px',
+                    color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : '#475569'),
                   }}
                 >
                   {pin.label || (
@@ -720,7 +759,8 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                   value={newTodo}
                   onChange={e => setNewTodo(e.target.value)}
                   placeholder="Add task..."
-                  className={`flex-1 px-2 py-1.5 text-sm rounded-lg outline-none focus:ring-1 focus:ring-emerald-400/50 bg-white/20 border border-black/5 ${getContrastColor(bgColor)} placeholder-slate-400`}
+                  className={`flex-1 px-2 py-1.5 text-sm rounded-lg outline-none focus:ring-1 focus:ring-emerald-400/50 bg-white/20 border border-black/5 placeholder-slate-400`}
+                  style={{ color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : '#334155') }}
                 />
                 <button type="submit" className="p-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors shadow-sm">
                   <Plus className="w-4 h-4" />
@@ -736,7 +776,10 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                     >
                       {todo.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
                     </button>
-                    <span className={`text-sm flex-1 leading-snug ${todo.completed ? 'opacity-40 line-through' : ''} ${getContrastColor(bgColor)}`}>
+                    <span 
+                      className={`text-sm flex-1 leading-snug ${todo.completed ? 'opacity-40 line-through' : ''}`}
+                      style={{ color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#F1F5F9' : '#1E293B') }}
+                    >
                       {todo.text}
                     </span>
                     <button
@@ -770,7 +813,10 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                     <div className="text-xs font-bold text-rose-500 mb-0.5">
                       {note.dateRange.end ? 'Event/Range' : 'Reminder'}
                     </div>
-                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                    <p 
+                      className="text-sm leading-relaxed font-medium"
+                      style={{ color: pin.textColor || '#334155' }}
+                    >
                       {note.text}
                     </p>
                   </div>
