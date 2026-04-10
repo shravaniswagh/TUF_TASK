@@ -447,70 +447,84 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 </button>
                 {showColorPicker && (
                   <div
-                    className="absolute top-8 right-0 bg-slate-900/95 backdrop-blur-xl rounded-[28px] shadow-2xl border border-white/10 p-5 z-50 animate-in fade-in zoom-in duration-150 w-max"
+                    className="absolute top-8 right-0 bg-slate-900/95 backdrop-blur-xl rounded-[32px] shadow-2xl border border-white/10 p-6 z-50 animate-in fade-in zoom-in duration-150 w-max"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.nativeEvent.stopImmediatePropagation();
                     }}
                   >
-                    <div className="space-y-4">
-                      {/* Section Label: Background */}
-                      <div className="flex items-center gap-2 px-1">
-                        <span className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Background</span>
-                        <div className="h-[1px] flex-1 bg-white/10" />
+                    <div className="space-y-6">
+                      {/* Section: Background */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 px-1">
+                          <span className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Body</span>
+                          <div className="h-[1px] flex-1 bg-white/5" />
+                        </div>
+                        
+                        <div className="flex flex-col gap-2.5">
+                          {[0, 1, 2, 3, 4].map((rowIndex) => (
+                            <div key={rowIndex} className="flex flex-row pl-3">
+                              {NOTE_COLORS.slice(rowIndex * 6, (rowIndex + 1) * 6).map((color, i) => (
+                                <motion.button
+                                  key={color}
+                                  whileHover={{ scale: 1.3, zIndex: 20, y: -2 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={() => onUpdate(pin.id, { color })}
+                                  className={`w-8 h-8 rounded-full border-2 border-slate-900 shadow-lg transition-shadow duration-200 ${i === 0 ? '' : '-ml-3'} ${pin.color === color ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 z-10' : 'z-0'}`}
+                                  style={{ backgroundColor: color, position: 'relative' }}
+                                />
+                              ))}
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
-                      {/* Background Selection */}
-                      <div className="grid grid-cols-6 gap-2.5">
-                        {NOTE_COLORS.map((color) => (
-                          <button
-                            key={color}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onClick={() => onUpdate(pin.id, { color })}
-                            className={`w-7 h-7 rounded-full border transition-all hover:scale-110 active:scale-95 ${color === '#FFFFFF' ? 'border-slate-200' : 'border-black/5'} ${pin.color === color ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : ''}`}
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Section Label: Text */}
-                      <div className="flex items-center gap-2 px-1 pt-1">
-                        <span className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Text Style</span>
-                        <div className="h-[1px] flex-1 bg-white/10" />
-                      </div>
-
-                      {/* Text Color Selection */}
-                      <div className="grid grid-cols-6 gap-2.5">
-                        {[
-                          { name: 'Auto', value: undefined },
-                          { name: 'Black', value: '#000000' },
-                          { name: 'White', value: '#FFFFFF' },
-                          { name: 'Blue', value: '#3B82F6' },
-                          { name: 'Rose', value: '#F43F5E' },
-                          { name: 'Emerald', value: '#10B981' },
-                          { name: 'Amber', value: '#F59E0B' },
-                          { name: 'Indigo', value: '#6366F1' },
-                          { name: 'Violet', value: '#8B5CF6' },
-                          { name: 'Sky', value: '#0EA5E9' },
-                          { name: 'Slate', value: '#64748B' },
-                          { name: 'RoseGold', value: '#FB7185' },
-                        ].map((c) => (
-                          <button
-                            key={c.name}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onClick={() => onUpdate(pin.id, { textColor: c.value })}
-                            className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center ${
-                              pin.textColor === c.value || (!pin.textColor && !c.value)
-                                ? 'border-indigo-500 ring-2 ring-indigo-500/30 ring-offset-1 ring-offset-slate-900 shadow-[0_0_10px_rgba(99,102,241,0.4)]' 
-                                : 'border-white/10'
-                            }`}
-                            style={{ backgroundColor: c.value || (isDark ? '#F1F5F9' : '#0F172A') }}
-                          >
-                            {(pin.textColor === c.value || (!pin.textColor && !c.value)) && (
-                              <div className={`w-1.5 h-1.5 rounded-full ${c.value === '#FFFFFF' ? 'bg-slate-900' : 'bg-white'}`} />
-                            )}
-                          </button>
-                        ))}
+                      {/* Section: Text */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 px-1">
+                          <span className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Text</span>
+                          <div className="h-[1px] flex-1 bg-white/5" />
+                        </div>
+                        
+                        <div className="flex flex-col gap-2.5">
+                          {[0, 1].map((rowIndex) => (
+                            <div key={rowIndex} className="flex flex-row pl-3">
+                              {[
+                                { name: 'Auto', value: undefined },
+                                { name: 'Black', value: '#000000' },
+                                { name: 'White', value: '#FFFFFF' },
+                                { name: 'Blue', value: '#3B82F6' },
+                                { name: 'Rose', value: '#F43F5E' },
+                                { name: 'Emerald', value: '#10B981' },
+                                { name: 'Amber', value: '#F59E0B' },
+                                { name: 'Indigo', value: '#6366F1' },
+                                { name: 'Violet', value: '#8B5CF6' },
+                                { name: 'Sky', value: '#0EA5E9' },
+                                { name: 'Slate', value: '#64748B' },
+                                { name: 'RoseGold', value: '#FB7185' },
+                              ].slice(rowIndex * 6, (rowIndex + 1) * 6).map((c, i) => (
+                                <motion.button
+                                  key={c.name}
+                                  whileHover={{ scale: 1.3, zIndex: 20, y: -2 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={() => onUpdate(pin.id, { textColor: c.value })}
+                                  className={`w-8 h-8 rounded-full border-2 border-slate-900 shadow-lg transition-shadow duration-200 flex items-center justify-center ${i === 0 ? '' : '-ml-3'} ${
+                                    pin.textColor === c.value || (!pin.textColor && !c.value)
+                                      ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 z-10' 
+                                      : 'z-0'
+                                  }`}
+                                  style={{ backgroundColor: c.value || (isDark ? '#F1F5F9' : '#0F172A'), position: 'relative' }}
+                                >
+                                  {(pin.textColor === c.value || (!pin.textColor && !c.value)) && (
+                                    <div className={`w-1.5 h-1.5 rounded-full ${c.value === '#FFFFFF' ? 'bg-slate-900' : 'bg-white'}`} />
+                                  )}
+                                </motion.button>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
