@@ -23,6 +23,7 @@ import {
   Unlock,
   Trash2,
   AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
@@ -183,14 +184,20 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const addPin = (type: PinData['type']) => {
     const maxZ = pins.reduce((m, p) => Math.max(m, p.zIndex ?? 0), 0);
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    
+    // Spawn on the right side
+    const width = type === 'calendar' ? 480 : 300;
+    const initialX = screenWidth - width - 40 - (Math.random() * 40);
+    
     setPins(prev => [...prev, {
       id: `${type}-${Date.now()}`,
       type,
       content: type === 'todo' ? JSON.stringify([]) : '',
-      x: 100 + Math.random() * 200,
+      x: initialX,
       y: 100 + Math.random() * 200,
-      width: type === 'calendar' ? 480 : 300,
-      height: type === 'calendar' ? 600 : 300,
+      width,
+      height: type === 'calendar' ? 600 : 200, // Thinner height for clock
       color: '#FFFFFF',
       zIndex: maxZ + 1,
       rotation: (Math.random() - 0.5) * 4,
@@ -291,6 +298,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                      <MenuBtn icon={<CalendarDays className="w-3.5 h-3.5 text-sky-500" />} bg="bg-sky-100 dark:bg-sky-900/40" label="Calendar" onClick={() => addPin('calendar')} divider />
                      <MenuBtn icon={<ListTodo className="w-3.5 h-3.5 text-teal-500" />} bg="bg-teal-100 dark:bg-teal-900/40" label="To-Do List" onClick={() => addPin('todo')} divider />
                      <MenuBtn icon={<ClipboardList className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Daily Tasks" onClick={() => addPin('daily-tasks')} divider />
+                     <MenuBtn icon={<Clock className="w-3.5 h-3.5 text-indigo-500" />} bg="bg-indigo-100 dark:bg-indigo-900/40" label="Live Clock" onClick={() => addPin('clock')} divider />
                      
                      <div className="border-t border-slate-100 dark:border-slate-800">
                         <MenuBtn 

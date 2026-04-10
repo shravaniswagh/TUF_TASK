@@ -6,7 +6,7 @@ import { motion } from 'motion/react';
 
 export interface PinData {
   id: string;
-  type: 'image' | 'note' | 'countdown' | 'calendar' | 'todo' | 'daily-tasks';
+  type: 'image' | 'note' | 'countdown' | 'calendar' | 'todo' | 'daily-tasks' | 'clock';
   content: string;
   label?: string;
   x: number;
@@ -126,6 +126,13 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const labelRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    if (pin.type !== 'clock') return;
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, [pin.type]);
 
   useEffect(() => {
     setNoteContent(pin.content);
@@ -359,13 +366,13 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
         >
           <div className="flex items-center gap-1.5">
             <GripVertical className={`w-3.5 h-3.5 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-400' : 'text-slate-400'}`} />
-            <span className={`text-xs capitalize tracking-wide font-medium ${getContrastColor(bgColor)}`}>
+              <span className={`text-xs capitalize tracking-wide font-medium ${getContrastColor(bgColor)}`}>
               {pin.type.replace('-', ' ')}
             </span>
           </div>
           <div className="flex items-center gap-1">
             {/* Font picker */}
-            {(pin.type === 'note' || pin.type === 'countdown' || pin.type === 'todo') && (
+            {(pin.type === 'note' || pin.type === 'countdown' || pin.type === 'todo' || pin.type === 'clock') && (
               <div className="relative">
                 <button
                   onMouseDown={(e) => e.stopPropagation()}
@@ -750,6 +757,37 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                     <span className="text-xs font-bold uppercase tracking-tight">No tasks for today</span>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+          {pin.type === 'clock' && (
+            <div className="h-full flex flex-col items-center justify-center text-center">
+              <div 
+                className="text-4xl font-black tracking-tighter tabular-nums"
+                style={{ 
+                  color: getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor,
+                  fontFamily: pin.fontFamily || 'system-ui'
+                }}
+              >
+                {currentTime.toLocaleTimeString([], { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </div>
+              <div 
+                className="mt-1 opacity-60 font-bold uppercase tracking-[0.2em] text-[10px]"
+                style={{ 
+                  color: getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor,
+                  fontFamily: pin.fontFamily || 'system-ui'
+                }}
+              >
+                {currentTime.toLocaleDateString([], { weekday: 'long' })}
+              </div>
+              <div 
+                className="mt-0.5 opacity-40 font-medium text-[9px] uppercase tracking-widest"
+                style={{ 
+                  color: getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor,
+                  fontFamily: pin.fontFamily || 'system-ui'
+                }}
+              >
+                {currentTime.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })}
               </div>
             </div>
           )}
