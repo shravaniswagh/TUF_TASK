@@ -3,7 +3,6 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Pin, PinData } from './Pin';
 import { CalendarPin } from './CalendarPin';
-import { useTheme } from 'next-themes';
 import { THEME_CONFIG } from '../theme-config';
 import {
   Plus,
@@ -60,9 +59,19 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [boardColor, setBoardColor] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
-  const { setTheme, resolvedTheme, theme } = useTheme();
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
+
+  // ── FAIL-SAFE MANUAL THEME ENGINE ────────────────────────────
+  // We bypass next-themes for the board rendering to prevent OS interference.
+  const [manualTheme, setManualTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('board-theme-forced') as 'light' | 'dark') || 'light';
+    }
+    return 'light';
+  });
+
+  const isDark = manualTheme === 'dark';
 
   // 1. Sync mounted state for hydration safety
   useEffect(() => {
@@ -70,23 +79,26 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, []);
 
   // 2. FORCE SYSTEM LOCK: Manually synchronize DOM classes and body backgrounds
-  // We use useLayoutEffect to apply this BEFORE the browser paints to prevent flicker.
+  // This is the CRITICAL 'fail-safe' that ensures the UI follows manualTheme strictly.
   useLayoutEffect(() => {
     if (!mounted) return;
-    const isDarkNow = resolvedTheme === 'dark';
     const html = document.documentElement;
     const body = document.body;
 
-    if (isDarkNow) {
+    if (isDark) {
       html.classList.add('dark');
+      html.style.colorScheme = 'dark';
       body.style.backgroundColor = THEME_CONFIG.backgrounds.dark;
     } else {
       html.classList.remove('dark');
+      html.style.colorScheme = 'light';
       body.style.backgroundColor = THEME_CONFIG.backgrounds.light;
     }
-  }, [resolvedTheme, mounted]);
-
-  const isDark = mounted && resolvedTheme === 'dark';
+    
+    // Sync to local storage for instant head-script read on next load
+    localStorage.setItem('board-theme-forced', manualTheme);
+    localStorage.setItem('theme', manualTheme); // Also sync with next-themes if it exists
+  }, [manualTheme, mounted, isDark]);
 
   /* ── Load & Sync ─────────────────────────────────────────────── */
   useEffect(() => {
@@ -103,8 +115,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
           if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
           
           // FORCE THEME LOCK: Apply from database immediately
-          if (data.theme) {
-            setTheme(data.theme);
+          if (data.theme && (data.theme === 'light' || data.theme === 'dark')) {
+            setManualTheme(data.theme);
           }
         }
         setHasLoaded(true);
@@ -114,7 +126,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
       }
     };
     fetchPins();
-  }, [boardId, setTheme]);
+  }, [boardId]);
 
   // Persistent Save
   useEffect(() => {
@@ -128,12 +140,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
       setDoc(doc(db, 'boards', boardId), {
         pins: cleaned,
         boardBackgroundColor: boardColor,
-        theme: theme, // Save current theme to database
+        theme: manualTheme, // Save forced theme to database
         lastUpdated: new Date().toISOString(),
       }, { merge: true }).catch(console.error);
     }, 1200);
     return () => clearTimeout(timer);
-  }, [pins, hasLoaded, boardId, boardColor, theme]);
+  }, [pins, hasLoaded, boardId, boardColor, manualTheme]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
   const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
@@ -182,10 +194,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
+  const toggleTheme = () => setManualTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
-  /* ── Zero-Latency Board Logic ──────────────────────────────── */
-  // Direct Hex Logic: We use the actual hex codes from theme-config to bypass CSS var latency.
+  /* ── Rendering Logic ────────────────────────────────────────── */
   const baseBg = isDark ? THEME_CONFIG.backgrounds.dark : THEME_CONFIG.backgrounds.light;
   
   const currentBoardBg = isDark 
@@ -202,7 +213,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
       onMouseLeave={handleMouseUp}
       className={`w-full h-full relative transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
       style={{
-        backgroundColor: currentBoardBg || baseBg, // Use local baseBg hex directly
+        backgroundColor: currentBoardBg || baseBg,
         backgroundImage: `radial-gradient(circle, ${getAdaptiveDotColor(currentBoardBg, isDark)} 1.5px, transparent 1.5px)`,
         backgroundSize: '36px 36px',
         backgroundAttachment: 'fixed',
@@ -276,10 +287,10 @@ export function PinBoard({ boardId }: { boardId: string }) {
                       <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Settings</span>
                     </div>
 
-                    <button onClick={toggleTheme} className="w-full p-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-4 border border-slate-100 dark:border-slate-800 shadow-sm transition-all active:scale-95 group">
+                    <button onClick={toggleTheme} className="w-full p-3 flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl mb-4 border border-slate-200 dark:border-slate-700 shadow-sm transition-all active:scale-95 group">
                       <div className="flex items-center gap-2">
                         {isDark ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{isDark ? 'Dark Mode' : 'Light Mode'}</span>
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{isDark ? 'Forced Dark' : 'Forced Light'}</span>
                       </div>
                       <div className={`w-8 h-4.5 rounded-full relative transition-colors ${isDark ? 'bg-indigo-500' : 'bg-slate-300'}`}>
                         <div className={`absolute top-0.75 w-3 h-3 bg-white rounded-full transition-all shadow-sm ${isDark ? 'left-4.25' : 'left-0.75'}`} />
