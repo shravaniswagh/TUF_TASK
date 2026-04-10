@@ -447,77 +447,67 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 </button>
                 {showColorPicker && (
                   <div
-                    className={`${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} absolute top-8 right-0 rounded-2xl shadow-2xl border p-4 z-50 animate-in fade-in zoom-in duration-150 w-72`}
+                    className={`${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} absolute top-8 right-0 rounded-2xl shadow-2xl border p-3 z-50 animate-in fade-in zoom-in duration-150 w-max`}
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.nativeEvent.stopImmediatePropagation();
                     }}
                   >
-                    <div className="space-y-4">
-                      {/* Background Section */}
-                      <div>
-                        <div className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2.5 flex items-center gap-2">
-                          <Sun className="w-3 h-3" />
-                          Pin Background
-                        </div>
-                        <div className="grid grid-cols-6 gap-2">
-                          {NOTE_COLORS.map((color) => (
-                            <button
-                              key={color}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onClick={() => onUpdate(pin.id, { color })}
-                              className={`w-6 h-6 rounded-full border transition-all hover:scale-125 hover:shadow-lg ${color === '#FFFFFF' ? 'border-slate-200' : 'border-black/5'} ${pin.color === color ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900' : ''}`}
-                              style={{ backgroundColor: color }}
-                              title={color}
-                            />
-                          ))}
-                        </div>
+                    <div className="space-y-3">
+                      {/* Background Selection */}
+                      <div className="grid grid-cols-6 gap-2">
+                        {NOTE_COLORS.map((color) => (
+                          <button
+                            key={color}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={() => onUpdate(pin.id, { color })}
+                            className={`w-6 h-6 rounded-full border transition-all hover:scale-125 hover:shadow-lg ${color === '#FFFFFF' ? 'border-slate-200' : 'border-black/5'} ${pin.color === color ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900' : ''}`}
+                            style={{ backgroundColor: color }}
+                            title="Pin Color"
+                          />
+                        ))}
                       </div>
 
-                      {/* Divider */}
-                      <div className="border-t border-slate-100 dark:border-slate-800" />
+                      {/* Thin Divider Label */}
+                      <div className="flex items-center gap-2 px-1">
+                        <div className="h-[1px] flex-1 bg-slate-100 dark:bg-slate-800" />
+                        <span className="text-[8px] font-black tracking-widest text-slate-300 dark:text-slate-600 uppercase">Text</span>
+                        <div className="h-[1px] flex-1 bg-slate-100 dark:bg-slate-800" />
+                      </div>
 
-                      {/* Text Color Section */}
-                      <div>
-                        <div className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2.5 flex items-center gap-2">
-                          <Type className="w-3 h-3" />
-                          Text Color
-                        </div>
-                        <div className="grid grid-cols-7 gap-2">
-                          {[
-                            { name: 'Auto', value: undefined },
-                            { name: 'Black', value: '#000000' },
-                            { name: 'White', value: '#FFFFFF' },
-                            { name: 'Blue', value: '#2563EB' },
-                            { name: 'Rose', value: '#E11D48' },
-                            { name: 'Emerald', value: '#059669' },
-                            { name: 'Amber', value: '#D97706' },
-                            { name: 'Indigo', value: '#4F46E5' },
-                            { name: 'Violet', value: '#7C3AED' },
-                            { name: 'Slate', value: '#475569' },
-                            { name: 'Cherry', value: '#9F1239' },
-                            { name: 'Forest', value: '#064E3B' },
-                            { name: 'Navy', value: '#1E3A8A' },
-                            { name: 'Plum', value: '#581C87' },
-                          ].map((c) => (
-                            <button
-                              key={c.name}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onClick={() => onUpdate(pin.id, { textColor: c.value })}
-                              className={`w-6 h-6 rounded-lg border-2 transition-all hover:scale-110 flex items-center justify-center ${
-                                pin.textColor === c.value || (!pin.textColor && !c.value)
-                                  ? 'border-indigo-500 shadow-sm' 
-                                  : 'border-transparent'
-                              }`}
-                              style={{ backgroundColor: c.value || (isDark ? '#F1F5F9' : '#0F172A') }}
-                              title={c.name}
-                            >
-                              {(pin.textColor === c.value || (!pin.textColor && !c.value)) && (
-                                <div className={`w-1.5 h-1.5 rounded-full ${c.value === '#FFFFFF' ? 'bg-slate-900' : 'bg-white'}`} />
-                              )}
-                            </button>
-                          ))}
-                        </div>
+                      {/* Text Color Selection */}
+                      <div className="grid grid-cols-6 gap-2">
+                        {[
+                          { name: 'Auto', value: undefined },
+                          { name: 'Black', value: '#000000' },
+                          { name: 'White', value: '#FFFFFF' },
+                          { name: 'Blue', value: '#2563EB' },
+                          { name: 'Rose', value: '#E11D48' },
+                          { name: 'Emerald', value: '#059669' },
+                          { name: 'Amber', value: '#D97706' },
+                          { name: 'Indigo', value: '#4F46E5' },
+                          { name: 'Violet', value: '#7C3AED' },
+                          { name: 'Plum', value: '#581C87' },
+                          { name: 'Forest', value: '#064E3B' },
+                          { name: 'Navy', value: '#1E3A8A' },
+                        ].map((c) => (
+                          <button
+                            key={c.name}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={() => onUpdate(pin.id, { textColor: c.value })}
+                            className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 flex items-center justify-center ${
+                              pin.textColor === c.value || (!pin.textColor && !c.value)
+                                ? 'border-indigo-500 shadow-sm' 
+                                : 'border-slate-100 dark:border-slate-800'
+                            }`}
+                            style={{ backgroundColor: c.value || (isDark ? '#F1F5F9' : '#0F172A') }}
+                            title={`Text: ${c.name}`}
+                          >
+                            {(pin.textColor === c.value || (!pin.textColor && !c.value)) && (
+                              <div className={`w-1.5 h-1.5 rounded-full ${c.value === '#FFFFFF' ? 'bg-slate-900' : 'bg-white'}`} />
+                            )}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
