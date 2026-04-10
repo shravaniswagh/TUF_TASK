@@ -285,19 +285,15 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   /* ── Render ──────────────────────────────────────────────────────── */
   if (!hasLoaded) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-white dark:bg-[#050505]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading your board...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div
+    <motion.div
       ref={boardRef}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1.2, ease: "easeInOut" }}
       style={{
         position:        'relative',
         width:           '100%',
@@ -496,6 +492,6 @@ export function PinBoard({ boardId }: { boardId: string }) {
           onClick={() => setShowAddMenu(false)}
         />
       )}
-    </div>
+    </motion.div>
   );
 }
