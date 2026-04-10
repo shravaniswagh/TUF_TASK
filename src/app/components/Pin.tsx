@@ -447,61 +447,64 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                 </button>
                 {showColorPicker && (
                   <div
-                    className={`${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'} absolute top-8 right-0 rounded-2xl shadow-2xl border p-3 z-50 animate-in fade-in zoom-in duration-150 w-max`}
+                    className="absolute top-8 right-0 bg-slate-900/95 backdrop-blur-xl rounded-[28px] shadow-2xl border border-white/10 p-5 z-50 animate-in fade-in zoom-in duration-150 w-max"
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       e.nativeEvent.stopImmediatePropagation();
                     }}
                   >
-                    <div className="space-y-3">
+                    <div className="space-y-4">
+                      {/* Section Label: Background */}
+                      <div className="flex items-center gap-2 px-1">
+                        <span className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Background</span>
+                        <div className="h-[1px] flex-1 bg-white/10" />
+                      </div>
+
                       {/* Background Selection */}
-                      <div className="grid grid-cols-6 gap-2">
+                      <div className="grid grid-cols-6 gap-2.5">
                         {NOTE_COLORS.map((color) => (
                           <button
                             key={color}
                             onMouseDown={(e) => e.stopPropagation()}
                             onClick={() => onUpdate(pin.id, { color })}
-                            className={`w-6 h-6 rounded-full border transition-all hover:scale-125 hover:shadow-lg ${color === '#FFFFFF' ? 'border-slate-200' : 'border-black/5'} ${pin.color === color ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900' : ''}`}
+                            className={`w-7 h-7 rounded-full border transition-all hover:scale-110 active:scale-95 ${color === '#FFFFFF' ? 'border-slate-200' : 'border-black/5'} ${pin.color === color ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : ''}`}
                             style={{ backgroundColor: color }}
-                            title="Pin Color"
                           />
                         ))}
                       </div>
 
-                      {/* Thin Divider Label */}
-                      <div className="flex items-center gap-2 px-1">
-                        <div className="h-[1px] flex-1 bg-slate-100 dark:bg-slate-800" />
-                        <span className="text-[8px] font-black tracking-widest text-slate-300 dark:text-slate-600 uppercase">Text</span>
-                        <div className="h-[1px] flex-1 bg-slate-100 dark:bg-slate-800" />
+                      {/* Section Label: Text */}
+                      <div className="flex items-center gap-2 px-1 pt-1">
+                        <span className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Text Style</span>
+                        <div className="h-[1px] flex-1 bg-white/10" />
                       </div>
 
                       {/* Text Color Selection */}
-                      <div className="grid grid-cols-6 gap-2">
+                      <div className="grid grid-cols-6 gap-2.5">
                         {[
                           { name: 'Auto', value: undefined },
                           { name: 'Black', value: '#000000' },
                           { name: 'White', value: '#FFFFFF' },
-                          { name: 'Blue', value: '#2563EB' },
-                          { name: 'Rose', value: '#E11D48' },
-                          { name: 'Emerald', value: '#059669' },
-                          { name: 'Amber', value: '#D97706' },
-                          { name: 'Indigo', value: '#4F46E5' },
-                          { name: 'Violet', value: '#7C3AED' },
-                          { name: 'Plum', value: '#581C87' },
-                          { name: 'Forest', value: '#064E3B' },
-                          { name: 'Navy', value: '#1E3A8A' },
+                          { name: 'Blue', value: '#3B82F6' },
+                          { name: 'Rose', value: '#F43F5E' },
+                          { name: 'Emerald', value: '#10B981' },
+                          { name: 'Amber', value: '#F59E0B' },
+                          { name: 'Indigo', value: '#6366F1' },
+                          { name: 'Violet', value: '#8B5CF6' },
+                          { name: 'Sky', value: '#0EA5E9' },
+                          { name: 'Slate', value: '#64748B' },
+                          { name: 'RoseGold', value: '#FB7185' },
                         ].map((c) => (
                           <button
                             key={c.name}
                             onMouseDown={(e) => e.stopPropagation()}
                             onClick={() => onUpdate(pin.id, { textColor: c.value })}
-                            className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 flex items-center justify-center ${
+                            className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 active:scale-95 flex items-center justify-center ${
                               pin.textColor === c.value || (!pin.textColor && !c.value)
-                                ? 'border-indigo-500 shadow-sm' 
-                                : 'border-slate-100 dark:border-slate-800'
+                                ? 'border-indigo-500 ring-2 ring-indigo-500/30 ring-offset-1 ring-offset-slate-900 shadow-[0_0_10px_rgba(99,102,241,0.4)]' 
+                                : 'border-white/10'
                             }`}
                             style={{ backgroundColor: c.value || (isDark ? '#F1F5F9' : '#0F172A') }}
-                            title={`Text: ${c.name}`}
                           >
                             {(pin.textColor === c.value || (!pin.textColor && !c.value)) && (
                               <div className={`w-1.5 h-1.5 rounded-full ${c.value === '#FFFFFF' ? 'bg-slate-900' : 'bg-white'}`} />
