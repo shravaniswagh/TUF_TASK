@@ -278,10 +278,17 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
 
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
   
-  // Calculate scrollbar color based on background
-  const bgColor = pin.color || (pin.type === 'todo' ? '#F0FDF4' : pin.type === 'daily-tasks' ? '#FDF4FF' : '#FFFBEB');
-  const scrollColor = darkenColor(bgColor, 20);
-  const scrollColorHover = darkenColor(bgColor, 35);
+  // Calculate scrollbar and background color based on theme
+  const isDark = resolvedTheme === 'dark';
+  
+  // Default backgrounds that adapt to Dark Mode
+  const defaultBg = isDark 
+    ? (pin.type === 'todo' ? '#064e3b' : pin.type === 'daily-tasks' ? '#2e1065' : '#18181b')
+    : (pin.type === 'todo' ? '#F0FDF4' : pin.type === 'daily-tasks' ? '#FDF4FF' : '#FFFBEB');
+
+  const bgColor = pin.color || defaultBg;
+  const scrollColor = isDark ? '#3f3f46' : darkenColor(bgColor, 15);
+  const scrollColorHover = isDark ? '#52525b' : darkenColor(bgColor, 25);
 
   return (
     <Resizable

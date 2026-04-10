@@ -53,6 +53,7 @@ function getAdaptiveDotColor(bgColor: string | null, resolvedTheme?: string) {
 export function PinBoard({ boardId }: { boardId: string }) {
   const [pins, setPins] = useState<PinData[]>([]);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [showMenu, setShowMenu]   = useState(false);
   const [menuView, setMenuView]   = useState<'main' | 'theme'>('main');
   const [boardColor, setBoardColor] = useState<string | null>(null);
@@ -61,6 +62,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
+
+  // Correctly handle mount for next-themes
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   /* ── Load & Save ───────────────────────────────────────────────── */
   useEffect(() => {
@@ -161,14 +167,19 @@ export function PinBoard({ boardId }: { boardId: string }) {
   };
 
   /* ── Theme Toggle ──────────────────────────────────────────────── */
-  // Use `theme` (not resolvedTheme) for the toggle so it works even before hydration
-  const isDark = resolvedTheme === 'dark';
+  const isDark = mounted && resolvedTheme === 'dark';
   const toggleTheme = () => setTheme(isDark ? 'light' : 'dark');
 
-  if (!hasLoaded) return null;
+  if (!hasLoaded || !mounted) return null;
 
   /* ── Palette for current mode ──────────────────────────────────── */
   const palette = isDark ? THEME_CONFIG.boardPalettes.dark : THEME_CONFIG.boardPalettes.light;
+
+  // Determine if we should show the custom background or fall back to theme default
+  // If it's Dark Mode, we only allow colors from the dark palette
+  const currentBoardBg = isDark 
+    ? (THEME_CONFIG.boardPalettes.dark.some(p => p.color === boardColor) ? boardColor : null)
+    : (THEME_CONFIG.boardPalettes.light.some(p => p.color === boardColor) ? boardColor : null);
 
   return (
     <div
@@ -178,8 +189,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
       onMouseLeave={handleMouseUp}
       className="w-full h-full relative"
       style={{
-        backgroundColor: boardColor || 'var(--background)',
-        backgroundImage: `radial-gradient(circle, ${getAdaptiveDotColor(boardColor, resolvedTheme)} 1.5px, transparent 1.5px)`,
+        backgroundColor: currentBoardBg || 'var(--background)',
+        backgroundImage: `radial-gradient(circle, ${getAdaptiveDotColor(currentBoardBg, resolvedTheme)} 1.5px, transparent 1.5px)`,
         backgroundSize: '36px 36px',
         backgroundAttachment: 'fixed',
         transition: 'background-color 0.4s ease',
