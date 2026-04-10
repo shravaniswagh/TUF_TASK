@@ -47,18 +47,18 @@ function InteractiveGrid() {
         const dx = mouseRef.current.x - dot.x;
         const dy = mouseRef.current.y - dot.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const radius = 100;
+        const radius = 250;
 
         let size = dot.baseSize;
-        let opacity = 0.1;
+        let opacity = 0.2;
 
         if (dist < radius) {
           const force = (radius - dist) / radius;
-          size = dot.baseSize + force * 2.5;
-          opacity = 0.1 + force * 0.4;
+          size = dot.baseSize + force * 6;
+          opacity = 0.2 + force * 0.6;
           ctx.fillStyle = isDark 
-            ? `rgba(96, 165, 250, ${opacity})` 
-            : `rgba(59, 130, 246, ${opacity})`;
+            ? `rgba(59, 130, 246, ${opacity})` 
+            : `rgba(30, 64, 175, ${opacity})`;
         } else {
           ctx.fillStyle = isDark ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`;
         }
