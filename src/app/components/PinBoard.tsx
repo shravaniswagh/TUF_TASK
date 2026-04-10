@@ -22,6 +22,7 @@ import {
   Lock,
   Unlock,
   Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
@@ -58,7 +59,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const [menuView, setMenuView] = useState<'main' | 'theme'>('main');
+  const [menuView, setMenuView] = useState<'main' | 'theme' | 'clear-confirm'>('main');
+  const [clearConfirmInput, setClearConfirmInput] = useState('');
   const [boardColor, setBoardColor] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -305,10 +307,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
                           bg="bg-rose-100 dark:bg-rose-900/40" 
                           label="Clear Board" 
                           onClick={() => {
-                            if (window.confirm("Are you sure you want to clear the entire board? This cannot be undone.")) {
-                              setPins([]);
-                              setShowAddMenu(false);
-                            }
+                            setClearConfirmInput('');
+                            setMenuView('clear-confirm');
                           }} 
                           divider
                         />
@@ -348,6 +348,51 @@ export function PinBoard({ boardId }: { boardId: string }) {
                           </button>
                         ))}
                       </div>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div key="clear" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="p-4 flex flex-col items-center text-center">
+                    <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3">
+                      <AlertTriangle className="w-6 h-6 text-rose-500" />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tighter mb-1">Danger Zone</h3>
+                    <p className="text-[10px] text-slate-500 mb-4 leading-tight">This will wipe the entire board permanently.</p>
+                    
+                    <div className="w-full space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-bold text-slate-400 text-left uppercase pl-1">Type "confirm" to unlock</p>
+                        <input 
+                          type="text"
+                          autoFocus
+                          value={clearConfirmInput}
+                          onChange={(e) => setClearConfirmInput(e.target.value.toLowerCase())}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:border-rose-500 transition-colors dark:text-white"
+                          placeholder="confirm"
+                        />
+                      </div>
+                      
+                      <button 
+                        disabled={clearConfirmInput !== 'confirm'}
+                        onClick={() => {
+                          setPins([]);
+                          setShowAddMenu(false);
+                          setMenuView('main');
+                        }}
+                        className={`w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                          clearConfirmInput === 'confirm' 
+                            ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 hover:scale-[1.02] active:scale-95' 
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                        }`}
+                      >
+                        Delete Everything
+                      </button>
+                      
+                      <button 
+                        onClick={() => setMenuView('main')}
+                        className="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors uppercase"
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </motion.div>
                 )}

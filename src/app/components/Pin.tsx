@@ -386,19 +386,28 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                   >
                     <div>
                       <label className="text-slate-600 block mb-1 text-xs">Font:</label>
-                      <select
-                        value={pin.fontFamily || 'system-ui'}
-                        onChange={(e) => {
-                          onUpdate(pin.id, { fontFamily: e.target.value });
-                        }}
-                        className="w-full px-2 py-1 border border-slate-200 rounded text-xs mb-2"
-                      >
-                        <option value="system-ui">Default</option>
-                        <option value="'Courier New', monospace">Typewriter</option>
-                        <option value="'Comic Sans MS', cursive">Playful</option>
-                        <option value="'Georgia', serif">Elegant</option>
-                        <option value="'Brush Script MT', cursive">Handwritten</option>
-                      </select>
+                      <div className="space-y-1 mb-3 max-h-[120px] overflow-auto custom-scrollbar pr-1">
+                        {[
+                          { name: 'Default', value: 'system-ui' },
+                          { name: 'Typewriter', value: "'Courier New', monospace" },
+                          { name: 'Playful', value: "'Comic Sans MS', cursive" },
+                          { name: 'Elegant', value: "'Georgia', serif" },
+                          { name: 'Handwritten', value: "'Brush Script MT', cursive" },
+                        ].map((f) => (
+                          <button
+                            key={f.value}
+                            onClick={() => onUpdate(pin.id, { fontFamily: f.value })}
+                            className={`w-full px-2 py-1.5 text-xs text-left rounded-md transition-colors ${
+                              (pin.fontFamily || 'system-ui') === f.value 
+                                ? 'bg-indigo-50 text-indigo-600 font-bold border border-indigo-100' 
+                                : 'hover:bg-slate-50 text-slate-600'
+                            }`}
+                            style={{ fontFamily: f.value }}
+                          >
+                            {f.name}
+                          </button>
+                        ))}
+                      </div>
 
                       <label className="text-slate-600 block mb-1 text-xs">Size:</label>
                       <select
