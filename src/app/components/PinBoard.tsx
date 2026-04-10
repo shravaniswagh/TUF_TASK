@@ -3,9 +3,11 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Pin, PinData } from './Pin';
 import { CalendarPin } from './CalendarPin';
-import { Plus, StickyNote, Calendar, Image as ImageIcon, CalendarDays, Moon, Sun, ListTodo, ClipboardList } from 'lucide-react';
+import { Plus, StickyNote, Calendar, Image as ImageIcon, CalendarDays, Moon, Sun, ListTodo, ClipboardList, Copy, Check, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from 'next-themes';
+import { signOut } from 'firebase/auth';
+import { auth } from '../../firebase';
 
 const TYPE_COLORS: Record<string, string[]> = {
   note:        ['#FFFBEB', '#EFF6FF', '#FDF4FF', '#F0FDF4', '#FFF1F2', '#FEF3C7', '#DBEAFE', '#FAE8FF', '#DCFCE7', '#FFE4E6'],
@@ -92,7 +94,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const { theme, setTheme } = useTheme();
-  const [backgroundUrl, setBackgroundUrl] = useState<string>('');
+  const [copied, setCopied] = useState(false);
 
   /* ── Persistence & Initial Calendar ──────────────────────────────── */
   useEffect(() => {
@@ -108,9 +110,6 @@ export function PinBoard({ boardId }: { boardId: string }) {
           }
           if (data.theme) {
             setTheme(data.theme);
-          }
-          if (data.backgroundUrl) {
-            setBackgroundUrl(data.backgroundUrl);
           }
         }
         
@@ -159,13 +158,19 @@ export function PinBoard({ boardId }: { boardId: string }) {
       setDoc(doc(db, 'boards', boardId), { 
         pins: cleanedPins,
         theme,
-        backgroundUrl,
         lastUpdated: new Date().toISOString()
       }, { merge: true })
         .catch(error => console.error('Failed to save pins to Firebase:', error));
     }, 1000);
     return () => clearTimeout(saveTimer);
-  }, [pins, hasLoaded, theme, boardId, backgroundUrl]);
+  }, [pins, hasLoaded, theme, boardId]);
+
+  const handleCopyBoardUrl = () => {
+    const url = `${window.location.origin}/?board=${boardId}`;
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   /* ── Drag handling ───────────────────────────────────────────────── */
   useEffect(() => {
@@ -297,11 +302,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
         cursor:          dragging ? 'grabbing' : 'default',
         // Layered background: wallpaper underneath, dot-grid on top
         backgroundImage: `
-          radial-gradient(circle, ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} 1.5px, transparent 1.5px)${backgroundUrl ? `, url(${backgroundUrl})` : ''}
+          radial-gradient(circle, ${theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'} 1.5px, transparent 1.5px)
         `,
-        backgroundSize:  '36px 36px, cover',
-        backgroundPosition: 'center, center',
-        backgroundAttachment: 'fixed, fixed',
+        backgroundSize:  '36px 36px',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
         overflow:        'hidden',
       }}
     >
@@ -418,17 +423,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 <span className="text-sm text-slate-700">Daily Tasks</span>
               </button>
               <button
-                onClick={() => {
-                  const url = prompt('Enter image URL for board wallpaper:', backgroundUrl);
-                  if (url !== null) setBackgroundUrl(url);
-                  setShowAddMenu(false);
-                }}
+                onClick={handleCopyBoardUrl}
                 className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
               >
                 <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                  <ImageIcon className="w-3.5 h-3.5 text-blue-500" />
+                  {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />}
                 </div>
-                <span className="text-sm text-slate-700">Set Wallpaper</span>
+                <span className="text-sm font-medium text-slate-700">{copied ? 'Copied!' : 'Copy Site URL'}</span>
               </button>
               <button
                 onClick={() => {
@@ -441,7 +442,19 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 <div className="w-6 h-6 rounded-full bg-slate-800 dark:bg-amber-100 flex items-center justify-center">
                   {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-600" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
                 </div>
-                <span className="text-sm text-slate-700">Change Theme</span>
+                <span className="text-sm font-medium text-slate-700">Change Theme</span>
+              </button>
+              <button
+                onClick={() => {
+                  signOut(auth);
+                  window.history.replaceState({}, '', `/`);
+                }}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-red-50 transition-colors text-left border-t border-slate-100 group"
+              >
+                <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
+                  <LogOut className="w-3.5 h-3.5 text-rose-500 group-hover:text-rose-600" />
+                </div>
+                <span className="text-sm font-medium text-rose-500 group-hover:text-rose-600">Sign Out</span>
               </button>
             </motion.div>
           )}
