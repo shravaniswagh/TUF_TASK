@@ -119,7 +119,7 @@ export function Auth() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4 relative overflow-y-auto overflow-x-hidden">
       <InteractiveGrid />
       
       {/* Decorative Background */}

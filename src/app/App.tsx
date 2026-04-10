@@ -47,7 +47,7 @@ export default function App() {
   // 1. If it's pure wallpaper mode (URL has board but NO web flag), bypass entirely
   if (isWallpaperMode) {
     return (
-      <div className="relative w-screen h-screen overflow-hidden">
+      <div className="relative w-screen h-screen overflow-auto">
         <PinBoard boardId={boardId} />
       </div>
     );
@@ -69,7 +69,7 @@ export default function App() {
 
   // 4. Web user logged in
   return (
-    <div className="relative w-screen h-screen overflow-hidden">
+    <div className="relative w-screen h-screen overflow-auto">
       <PinBoard boardId={boardId} />
     </div>
   );

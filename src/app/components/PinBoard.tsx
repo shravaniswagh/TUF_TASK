@@ -235,14 +235,17 @@ export function PinBoard({ boardId }: { boardId: string }) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
-      className={`w-full h-full relative transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+      className={`relative transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
       style={{
         backgroundColor: currentBoardBg || baseBg,
         backgroundImage: `radial-gradient(circle, ${getAdaptiveDotColor(currentBoardBg, isDark)} 1.5px, transparent 1.5px)`,
         backgroundSize: '36px 36px',
         backgroundAttachment: 'fixed',
         transition: 'background-color 0.4s ease-out',
-        overflow: 'hidden',
+        minWidth: '1920px',
+        minHeight: '1080px',
+        width: 'max-content',
+        height: 'max-content',
       }}
     >
       {/* ── Minimalist Instructions ────────────────────────────────── */}
