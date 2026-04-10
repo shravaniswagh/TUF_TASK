@@ -3,9 +3,25 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Pin, PinData } from './Pin';
 import { CalendarPin } from './CalendarPin';
-import { Plus, StickyNote, Calendar, Image as ImageIcon, CalendarDays, Moon, Sun, ListTodo, ClipboardList, Copy, Check, LogOut } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from 'next-themes';
+import { THEME_CONFIG } from '../theme-config';
+import {
+  Plus,
+  Settings2,
+  Copy,
+  LogOut,
+  Sun,
+  Moon,
+  ChevronUp,
+  StickyNote,
+  Calendar,
+  Image as ImageIcon,
+  CalendarDays,
+  ListTodo,
+  ClipboardList,
+  Check,
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../firebase';
 
@@ -93,6 +109,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const [boardColor, setBoardColor] = useState<string | null>(null);
+  const [showBoardColors, setShowBoardColors] = useState(false);
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
@@ -111,10 +129,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
         let initialPins: PinData[] = [];
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data.pins && data.pins.length > 0) {
-            initialPins = data.pins;
+            if (data.pins && data.pins.length > 0) {
+              initialPins = data.pins;
+            }
+            if (data.boardBackgroundColor) {
+              setBoardColor(data.boardBackgroundColor);
+            }
           }
-        }
         
         const hasCalendar = initialPins.some((p: PinData) => p.type === 'calendar');
         if (!hasCalendar) {
@@ -160,12 +181,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
       setDoc(doc(db, 'boards', boardId), { 
         pins: cleanedPins,
+        boardBackgroundColor: boardColor,
         lastUpdated: new Date().toISOString()
       }, { merge: true })
         .catch(error => console.error('Failed to save pins to Firebase:', error));
     }, 1000);
     return () => clearTimeout(saveTimer);
-  }, [pins, hasLoaded, boardId]);
+  }, [pins, hasLoaded, boardId, boardColor]);
 
   const handleToggleTheme = () => {
     const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
@@ -301,6 +323,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
         position:        'relative',
         width:           '100%',
         height:          '100%',
+        backgroundColor: boardColor || 'var(--background)',
         userSelect:      dragging ? 'none' : 'auto',
         cursor:          dragging ? 'grabbing' : 'default',
         // Layered background: dot-grid on top of background
@@ -310,6 +333,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
         backgroundSize:  '36px 36px',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
+        transition: 'background-color 0.5s ease',
         overflow:        'hidden',
       }}
     >
@@ -369,79 +393,107 @@ export function PinBoard({ boardId }: { boardId: string }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden w-44 mb-1"
+              className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden w-48 mb-2 backdrop-blur-xl"
             >
+              <div className="flex border-t border-slate-100 dark:border-slate-800 p-2 overflow-x-auto gap-2 bg-slate-50/50 dark:bg-slate-900/50 no-scrollbar">
+                {THEME_CONFIG.boardPalette.map((theme) => (
+                  <button
+                    key={theme.name}
+                    onClick={() => {
+                      setBoardColor(theme.color);
+                      if (theme.color) {
+                         // Heuristic: if it's a very light color, use light theme icons, if dark, use dark
+                         // But for now we just set the color
+                      }
+                    }}
+                    className={`flex-shrink-0 w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${boardColor === theme.color ? 'border-blue-500 scale-110 shadow-md' : 'border-slate-200 dark:border-slate-700'}`}
+                    style={{ backgroundColor: theme.color || (resolvedTheme === 'dark' ? '#050505' : '#f8fafc') }}
+                    title={theme.name}
+                  />
+                ))}
+              </div>
+
               <button
                 onClick={() => addPin('note')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
               >
-                <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
                   <StickyNote className="w-3.5 h-3.5 text-amber-500" />
                 </div>
-                <span className="text-sm text-slate-700">Note</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Note</span>
               </button>
               <button
                 onClick={() => addPin('image')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
               >
-                <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
                   <ImageIcon className="w-3.5 h-3.5 text-emerald-500" />
                 </div>
-                <span className="text-sm text-slate-700">Image</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Image</span>
               </button>
               <button
                 onClick={() => addPin('countdown')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
               >
-                <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
                   <Calendar className="w-3.5 h-3.5 text-indigo-500" />
                 </div>
-                <span className="text-sm text-slate-700">Countdown</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Countdown</span>
               </button>
               <button
                 onClick={() => addPin('calendar')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
               >
-                <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
                   <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
                 </div>
-                <span className="text-sm text-slate-700">Calendar</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Calendar</span>
               </button>
               <button
                 onClick={() => addPin('todo')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
               >
-                <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
                   <ListTodo className="w-3.5 h-3.5 text-emerald-500" />
                 </div>
-                <span className="text-sm text-slate-700">To-Do List</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">To-Do List</span>
               </button>
               <button
                 onClick={() => addPin('daily-tasks')}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
               >
-                <div className="w-6 h-6 rounded-full bg-rose-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
                   <ClipboardList className="w-3.5 h-3.5 text-rose-500" />
                 </div>
-                <span className="text-sm text-slate-700">Daily Tasks</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Daily Tasks</span>
               </button>
               <button
                 onClick={handleCopyBoardUrl}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
               >
-                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
                   {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 text-blue-500" />}
                 </div>
-                <span className="text-sm font-medium text-slate-700">{copied ? 'Copied!' : 'Copy Site URL'}</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{copied ? 'Copied!' : 'Copy Site URL'}</span>
               </button>
               <button
                 onClick={handleToggleTheme}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors text-left border-t border-slate-100"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left border-t border-slate-100 dark:border-slate-800 group"
               >
-                <div className="w-6 h-6 rounded-full bg-slate-800 dark:bg-amber-100 flex items-center justify-center">
-                  {resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-600" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
+                <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  {resolvedTheme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-500" /> : <Moon className="w-3.5 h-3.5 text-slate-500" />}
                 </div>
-                <span className="text-sm font-medium text-slate-700">Change Theme</span>
+                <span className="text-sm font-semibold text-slate-900 dark:text-white">Change Theme</span>
+              </button>
+              
+              <button
+                onClick={() => signOut(auth)}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
+              >
+                <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <LogOut className="w-3.5 h-3.5 text-rose-500" />
+                </div>
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Sign Out</span>
               </button>
               <button
                 onClick={() => {
@@ -474,9 +526,16 @@ export function PinBoard({ boardId }: { boardId: string }) {
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.94 }}
             onClick={() => setShowAddMenu(v => !v)}
-            className="w-14 h-14 bg-blue-500 text-white rounded-full shadow-[0_0_15px_rgba(59,130,246,0.4)] flex items-center justify-center hover:bg-blue-600 transition-colors relative"
+            style={{ 
+              backgroundColor: THEME_CONFIG.accent.primary,
+              boxShadow: `0 0 15px ${THEME_CONFIG.accent.glow}`
+            }}
+            className="w-14 h-14 text-white rounded-full flex items-center justify-center transition-colors relative"
           >
-            <span className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-20"></span>
+            <span 
+              style={{ backgroundColor: THEME_CONFIG.accent.primary }}
+              className="absolute inset-0 rounded-full animate-ping opacity-20"
+            ></span>
             <motion.div
               animate={{ rotate: showAddMenu ? 45 : 0 }}
               transition={{ duration: 0.18 }}

@@ -3,6 +3,7 @@ import { PinBoard } from './components/PinBoard';
 import { Auth } from './components/Auth';
 import { auth } from '../firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { THEME_CONFIG } from './theme-config';
 
 export default function App() {
   const [boardId, setBoardId] = useState<string>('default');
@@ -33,10 +34,20 @@ export default function App() {
     return () => unsubscribe();
   }, [isWallpaperMode]);
 
+  // Inject theme variables into :root
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--app-bg-light', THEME_CONFIG.backgrounds.light);
+    root.style.setProperty('--app-bg-dark', THEME_CONFIG.backgrounds.dark);
+    root.style.setProperty('--app-text-light', THEME_CONFIG.text.light);
+    root.style.setProperty('--app-text-dark', THEME_CONFIG.text.dark);
+    root.style.setProperty('--app-accent', THEME_CONFIG.accent.primary);
+  }, []);
+
   // 1. If it's pure wallpaper mode (URL has board but NO web flag), bypass entirely
   if (isWallpaperMode) {
     return (
-      <div className="relative w-screen h-screen overflow-hidden bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-slate-50">
+      <div className="relative w-screen h-screen overflow-hidden bg-[var(--app-bg-light)] dark:bg-[var(--app-bg-dark)] text-[var(--app-text-light)] dark:text-[var(--app-text-dark)]">
         <PinBoard boardId={boardId} />
       </div>
     );
@@ -45,7 +56,7 @@ export default function App() {
   // 2. Waiting for Firebase Auth
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#050505] flex items-center justify-center">
+      <div className="min-h-screen bg-[var(--app-bg-light)] dark:bg-[var(--app-bg-dark)] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -58,7 +69,7 @@ export default function App() {
 
   // 4. Web user logged in
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-slate-50">
+    <div className="relative w-screen h-screen overflow-hidden bg-[var(--app-bg-light)] dark:bg-[var(--app-bg-dark)] text-[var(--app-text-light)] dark:text-[var(--app-text-dark)]">
       <PinBoard boardId={boardId} />
     </div>
   );

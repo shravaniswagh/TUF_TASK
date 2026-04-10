@@ -30,7 +30,7 @@ export function Auth() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-slate-50 dark:bg-[#050505] p-4 relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[var(--app-bg-light,theme(colors.slate.50))] dark:bg-[var(--app-bg-dark,theme(colors.slate.950))] p-4 relative overflow-hidden">
       {/* Decorative Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 blur-[120px] rounded-full" />

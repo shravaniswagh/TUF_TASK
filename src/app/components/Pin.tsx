@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
+import { THEME_CONFIG } from '../theme-config';
 import { Resizable } from 're-resizable';
 import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Settings2, Sun, Moon } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -39,23 +39,8 @@ interface TodoItem {
   completed: boolean;
 }
 
-const PIN_HEAD_COLORS: Record<string, string> = {
-  note: '#F59E0B',
-  image: '#10B981',
-  countdown: '#6366F1',
-  calendar: '#6366F1',
-  todo: '#10B981',
-  'daily-tasks': '#F43F5E',
-};
-
-const NOTE_COLORS = [
-  '#FFFFFF', '#F8FAFC', '#F1F5F9', // Premium Whites/Grsys
-  '#FFFBEB', '#FEF3C7', '#FDF4FF', // Warm/Soft Clean
-  '#E2E8F0', '#94A3B8', '#475569', // Professional Slates
-  '#334155', '#1E293B', '#0F172A', // Deep Midnights
-  '#020617', '#18181B', '#27272A', // Obsidian/Zincs
-  '#3F3F46', '#52525B', '#71717A', // Industrial Grays
-];
+const PIN_HEAD_COLORS: Record<string, string> = THEME_CONFIG.pinHeads;
+const NOTE_COLORS = THEME_CONFIG.pinPalette;
 
 function getContrastColor(hexColor?: string) {
   if (!hexColor || hexColor === 'transparent') return 'text-slate-700';
