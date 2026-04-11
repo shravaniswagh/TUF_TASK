@@ -5,6 +5,9 @@ import { db } from '../../firebase';
 import { Pin, PinData } from './Pin';
 import { CalendarPin } from './CalendarPin';
 import { PinInspector } from './PinInspector';
+import { StopwatchPin } from './StopwatchPin';
+import { FocusSummaryPin } from './FocusSummaryPin';
+import { WeeklyAnalysisPin } from './WeeklyAnalysisPin';
 import { THEME_CONFIG } from '../theme-config';
 import {
   Plus,
@@ -26,6 +29,9 @@ import {
   Trash2,
   AlertTriangle,
   Clock,
+  Timer,
+  BarChart3,
+  Target,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { signOut } from 'firebase/auth';
@@ -67,7 +73,19 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [boardColor, setBoardColor] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+  const [activeFocusTaskId, setActiveFocusTaskId] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+
+  // Simulated Weekly Data - In a real app this would come from analytics/logs
+  const [weeklyData] = useState([
+    { day: 'Mon', hours: 4.2 },
+    { day: 'Tue', hours: 3.8 },
+    { day: 'Wed', hours: 5.1 },
+    { day: 'Thu', hours: 2.9 },
+    { day: 'Fri', hours: 4.5 },
+    { day: 'Sat', hours: 1.2 },
+    { day: 'Sun', hours: 0.8 },
+  ]);
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
   const [isLocked, setIsLocked] = useState(() => {
@@ -276,23 +294,84 @@ export function PinBoard({ boardId }: { boardId: string }) {
       </AnimatePresence>
 
       {/* ── Pins Render ───────────────────────────────────────────── */}
-      {hasLoaded && pins.map(pin => (
-        pin.type === 'calendar' ? (
-          <CalendarPin key={pin.id} pin={pin} boardId={boardId}
-            onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
-            isLocked={isLocked}
-            isSelected={selectedPinId === pin.id}
-            onSelect={() => setSelectedPinId(pin.id)}
-            onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
-        ) : (
-          <Pin key={pin.id} pin={pin} boardId={boardId}
-            onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
-            isLocked={isLocked}
-            isSelected={selectedPinId === pin.id}
-            onSelect={() => setSelectedPinId(pin.id)}
-            onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
-        )
-      ))}
+      {hasLoaded && pins.map(pin => {
+        if (pin.type === 'calendar') {
+          return (
+            <CalendarPin key={pin.id} pin={pin} boardId={boardId}
+              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+              isLocked={isLocked}
+              isSelected={selectedPinId === pin.id}
+              onSelect={() => setSelectedPinId(pin.id)}
+              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+          );
+        } else if (pin.type === 'stopwatch') {
+          return (
+            <StopwatchPin key={pin.id} pin={pin}
+              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+              isLocked={isLocked}
+              isSelected={selectedPinId === pin.id}
+              onSelect={() => setSelectedPinId(pin.id)}
+              onToggleFocus={(tid) => setActiveFocusTaskId(tid)}
+              activeTaskId={activeFocusTaskId}
+              activeTaskName={pins.find(p => p.type === 'todo' || p.type === 'daily-tasks')?.content ? 
+                (() => {
+                  try {
+                    const todos = JSON.parse(pins.find(p => p.type === 'todo')?.content || '[]');
+                    const t = todos.find((t: any) => t.id === activeFocusTaskId);
+                    return t ? t.text : null;
+                  } catch(e) { return null; }
+                })() : null}
+              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+          );
+        } else if (pin.type === 'focus-summary') {
+          return (
+            <FocusSummaryPin key={pin.id} pin={pin}
+              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+              isLocked={isLocked}
+              isSelected={selectedPinId === pin.id}
+              onSelect={() => setSelectedPinId(pin.id)}
+              dailyTotal={pins.find(p => p.type === 'stopwatch')?.totalSeconds || 0}
+              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+          );
+        } else if (pin.type === 'weekly-analysis') {
+          return (
+            <WeeklyAnalysisPin key={pin.id} pin={pin}
+              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+              isLocked={isLocked}
+              isSelected={selectedPinId === pin.id}
+              onSelect={() => setSelectedPinId(pin.id)}
+              weeklyData={weeklyData}
+              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+          );
+        } else {
+          return (
+            <Pin key={pin.id} pin={pin} boardId={boardId}
+              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+              isLocked={isLocked}
+              isSelected={selectedPinId === pin.id}
+              onSelect={() => setSelectedPinId(pin.id)}
+              activeFocusTaskId={activeFocusTaskId}
+              onStartFocus={(tid) => {
+                if (activeFocusTaskId === tid) {
+                  // Pause if clicking the same task
+                  const sw = pins.find(p => p.type === 'stopwatch');
+                  if (sw) updatePin(sw.id, { isPaused: true });
+                  setActiveFocusTaskId(null);
+                } else {
+                  const sw = pins.find(p => p.type === 'stopwatch');
+                  if (sw) {
+                    updatePin(sw.id, { isPaused: false, activeTaskId: tid });
+                    setActiveFocusTaskId(tid);
+                  } else {
+                    addPin('stopwatch');
+                    setActiveFocusTaskId(tid);
+                  }
+                }
+              }}
+              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+          );
+        }
+      })}
 
       {/* ── Universal Pin Inspector ────────────────────────────────── */}
       <AnimatePresence>
@@ -346,6 +425,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
                          <MenuBtn icon={<ListTodo className="w-3.5 h-3.5 text-teal-500" />} bg="bg-teal-100 dark:bg-teal-900/40" label="To-Do List" onClick={() => addPin('todo')} divider />
                          <MenuBtn icon={<ClipboardList className="w-3.5 h-3.5 text-rose-500" />} bg="bg-rose-100 dark:bg-rose-900/40" label="Daily Tasks" onClick={() => addPin('daily-tasks')} divider />
                          <MenuBtn icon={<Clock className="w-3.5 h-3.5 text-indigo-500" />} bg="bg-indigo-100 dark:bg-indigo-900/40" label="Live Clock" onClick={() => addPin('clock')} divider />
+                         <MenuBtn icon={<Timer className="w-3.5 h-3.5 text-indigo-500" />} bg="bg-indigo-100 dark:bg-indigo-900/40" label="Focus Stopwatch" onClick={() => addPin('stopwatch')} divider />
+                         <MenuBtn icon={<BarChart3 className="w-3.5 h-3.5 text-emerald-500" />} bg="bg-emerald-100 dark:bg-emerald-900/40" label="Focus Stats" onClick={() => addPin('weekly-analysis')} divider />
+                         <MenuBtn icon={<Target className="w-3.5 h-3.5 text-purple-500" />} bg="bg-purple-100 dark:bg-purple-900/40" label="Daily Summary" onClick={() => addPin('focus-summary')} divider />
                          
                          <div className="border-t border-slate-100 dark:border-slate-800">
                             <MenuBtn 

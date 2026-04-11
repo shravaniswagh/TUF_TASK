@@ -2,12 +2,12 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { THEME_CONFIG } from '../theme-config';
 import { Resizable } from 're-resizable';
-import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Settings2, Sun, Moon } from 'lucide-react';
+import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Settings2, Sun, Moon, Play, Pause } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export interface PinData {
   id: string;
-  type: 'image' | 'note' | 'countdown' | 'calendar' | 'todo' | 'daily-tasks' | 'clock';
+  type: 'image' | 'note' | 'countdown' | 'calendar' | 'todo' | 'daily-tasks' | 'clock' | 'stopwatch' | 'focus-summary' | 'weekly-analysis';
   content: string;
   label?: string;
   x: number;
@@ -24,6 +24,9 @@ export interface PinData {
   headerImage?: string;
   curveColor?: string;
   textColor?: string;
+  activeTaskId?: string;
+  isPaused?: boolean;
+  totalSeconds?: number;
 }
 
 interface PinProps {
@@ -37,6 +40,8 @@ interface PinProps {
   isLocked: boolean;
   isSelected?: boolean;
   onSelect: () => void;
+  activeFocusTaskId?: string | null;
+  onStartFocus?: (taskId: string) => void;
 }
 
 interface TodoItem {
@@ -114,7 +119,7 @@ function darkenColor(hex: string, percent: number): string {
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked, isSelected, onSelect }: PinProps) {
+export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked, isSelected, onSelect, activeFocusTaskId, onStartFocus }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [noteContent, setNoteContent] = useState(pin.content);
@@ -579,6 +584,13 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                       className={`flex-shrink-0 transition-colors ${todo.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-400'}`}
                     >
                       {todo.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                    </button>
+                    <button
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={() => onStartFocus?.(todo.id)}
+                      className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all ${activeFocusTaskId === todo.id ? 'bg-indigo-500 text-white shadow-lg' : 'hover:bg-slate-100 text-slate-400 dark:text-slate-500'}`}
+                    >
+                      {activeFocusTaskId === todo.id ? <Pause className="w-3 h-3 fill-white" /> : <Play className="w-3 h-3 fill-current" />}
                     </button>
                     <span 
                       className={`text-sm flex-1 leading-snug ${todo.completed ? 'opacity-40 line-through' : ''}`}
