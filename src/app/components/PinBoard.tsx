@@ -409,6 +409,26 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const toggleTheme = () => setManualTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
+  const handleToggleFocus = (tid: string | null) => {
+    localLastUpdatedRef.current = Date.now();
+    const sw = pins.find(p => p.type === 'stopwatch');
+    if (activeFocusTaskId === tid) {
+      if (sw) updatePin(sw.id, { isPaused: true, startTime: null });
+      setActiveFocusTaskId(null);
+      masterStateRef.current.activeFocusTaskId = null;
+    } else {
+      if (tid) {
+        if (sw) {
+          updatePin(sw.id, { isPaused: false, startTime: Date.now() });
+        } else {
+          addPin('stopwatch');
+        }
+      }
+      setActiveFocusTaskId(tid);
+      masterStateRef.current.activeFocusTaskId = tid;
+    }
+  };
+
   /* ── Rendering Logic ────────────────────────────────────────── */
   const baseBg = isDark ? THEME_CONFIG.backgrounds.dark : THEME_CONFIG.backgrounds.light;
   
@@ -484,7 +504,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 onBringToFront={bringToFront}
                 onToggleFullscreen={(fs) => toggleFullscreen(pin.id, fs)}
                 isFullscreen={false}
-                onToggleFocus={(tid) => setActiveFocusTaskId(tid)}
+                onToggleFocus={handleToggleFocus}
                 activeTaskId={activeFocusTaskId}
                 activeTaskName={activeTaskInfo?.text}
                 activeTaskColor={activeTaskInfo?.color}
@@ -541,23 +561,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
                 onBringToFront={bringToFront}
                 activeFocusTaskId={activeFocusTaskId}
-                onStartFocus={(tid) => {
-                  localLastUpdatedRef.current = Date.now();
-                  const sw = pins.find(p => p.type === 'stopwatch');
-                  if (activeFocusTaskId === tid) {
-                    if (sw) updatePin(sw.id, { isPaused: true, startTime: null });
-                    setActiveFocusTaskId(null);
-                    masterStateRef.current.activeFocusTaskId = null;
-                  } else {
-                    if (sw) {
-                      updatePin(sw.id, { isPaused: false, startTime: Date.now() });
-                    } else {
-                      addPin('stopwatch');
-                    }
-                    setActiveFocusTaskId(tid);
-                    masterStateRef.current.activeFocusTaskId = tid;
-                  }
-                }}
+                onStartFocus={handleToggleFocus}
                 onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
             );
           }
@@ -578,6 +582,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                         onOpenInspector={() => {}} 
                         onToggleFullscreen={(fs) => toggleFullscreen(pin.id, fs)}
                         isFullscreen={true}
+                        onToggleFocus={handleToggleFocus}
                         activeTaskId={activeFocusTaskId}
                         activeTaskName={activeTaskInfo?.text}
                         activeTaskColor={activeTaskInfo?.color}
