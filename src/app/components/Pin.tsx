@@ -386,7 +386,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                     e.stopPropagation();
                     onOpenInspector?.(pin.id);
                   }}
-                  className={`w-7 h-7 flex items-center justify-center rounded-xl bg-black/10 hover:bg-black/20 shadow-sm border border-black/5 transition-all`}
+                  className={`w-7 h-7 flex items-center justify-center rounded-xl hover:bg-black/5 transition-all`}
                 >
                   <Settings2 className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
                 </motion.button>
@@ -399,7 +399,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                   e.stopPropagation();
                   onDelete(pin.id);
                 }}
-                className={`w-7 h-7 flex items-center justify-center rounded-xl bg-black/5 hover:bg-rose-500 hover:text-white shadow-sm border border-black/5 transition-all group`}
+                className={`w-7 h-7 flex items-center justify-center rounded-xl hover:bg-rose-500 hover:text-white transition-all group`}
               >
                 <X className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'} group-hover:text-white`} />
               </button>

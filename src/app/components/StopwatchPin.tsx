@@ -200,20 +200,20 @@ export function StopwatchPin({
                           <button
                             ref={selectorBtnRef}
                             onClick={(e) => { e.stopPropagation(); setShowTaskSelector(!showTaskSelector); }}
-                            className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${showTaskSelector ? 'bg-indigo-500 text-white shadow-lg' : 'bg-black/5 hover:bg-black/10'}`}
+                            className={`w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/5 transition-all ${showTaskSelector ? 'bg-indigo-500 text-white shadow-lg' : ''}`}
                             title="Select Task"
                           >
                             <ListTodo className={`w-3.5 h-3.5 ${showTaskSelector ? 'text-white' : (clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600')}`} />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); onToggleFullscreen?.(true); }}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-black/10 transition-all"
+                            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/5 transition-all"
                           >
                             <Maximize2 className={`w-3.5 h-3.5 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`} />
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-black/10 transition-all"
+                            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/5 transition-all"
                           >
                             <Settings2 className={`w-3.5 h-3.5 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`} />
                           </button>
@@ -223,9 +223,9 @@ export function StopwatchPin({
                    {!isLocked && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
-                      className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${clockTextColor === '#ffffff' ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
+                      className={`w-8 h-8 flex items-center justify-center rounded-xl hover:bg-rose-500 hover:text-white transition-all group`}
                     >
-                      <X className={`w-3.5 h-3.5 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-500'}`} />
+                      <X className={`w-3.5 h-3.5 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-500'} group-hover:text-white`} />
                     </button>
                    )}
                 </div>

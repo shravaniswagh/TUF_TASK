@@ -157,7 +157,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onClick={(e) => { e.stopPropagation(); onOpenInspector?.(pin.id); }}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/10 hover:bg-black/20 transition-all shadow-sm border border-black/5"
+                  className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/5 transition-all"
                 >
                   <Settings2 className={`w-3.5 h-3.5 ${textColorClass}`} />
                 </motion.button>
@@ -169,7 +169,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
                   e.stopPropagation();
                   onDelete(pin.id);
                 }}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-black/5 group"
+                className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-rose-500 hover:text-white transition-all group"
                 aria-label="Close calendar"
               >
                 <X className={`w-3.5 h-3.5 ${textColorClass} group-hover:text-white`} />
