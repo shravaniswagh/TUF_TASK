@@ -16,6 +16,7 @@ interface FocusSummaryPinProps {
   isLocked: boolean;
   isSelected?: boolean;
   onSelect: () => void;
+  onBringToFront: (id: string) => void;
   dailyTotal: number; // in seconds
 }
 
@@ -35,7 +36,7 @@ function getContrastColor(hexColor?: string) {
 }
 
 export function FocusSummaryPin({ 
-  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, dailyTotal 
+  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, onBringToFront, dailyTotal 
 }: FocusSummaryPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const hours = Math.floor(dailyTotal / 3600);
@@ -63,7 +64,10 @@ export function FocusSummaryPin({
     >
       <motion.div
         className={`w-full h-full flex flex-col rounded-xl border border-black/5 transition-all duration-300 ${isSelected ? 'shadow-2xl' : ''} backdrop-blur-md`}
-        onClick={onSelect}
+        onClick={() => {
+          onSelect();
+          onBringToFront(pin.id);
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{

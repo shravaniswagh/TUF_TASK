@@ -35,15 +35,16 @@ interface CalendarPinProps {
   isSelected?: boolean;
   onSelect: () => void;
   onOpenInspector?: (id: string) => void;
+  onBringToFront: (id: string) => void;
 }
 
-export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect }: CalendarPinProps) {
+export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, onBringToFront }: CalendarPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const isDarkNow = isDark;
   const textColorClass = 'text-slate-500';
 
   const handleBringToFront = () => {
-    onUpdate(pin.id, { zIndex: Date.now() });
+    onBringToFront(pin.id);
   };
   
   // No rotation for calendar - keep it straight

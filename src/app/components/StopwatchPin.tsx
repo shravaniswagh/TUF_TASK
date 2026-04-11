@@ -20,6 +20,7 @@ interface StopwatchPinProps {
   onSelect: () => void;
   onToggleFocus?: (taskId: string | null) => void;
   onFocusIncrement?: () => void;
+  onBringToFront: (id: string) => void;
   activeTaskId?: string | null;
   activeTaskName?: string | null;
   allPins?: PinData[];
@@ -52,7 +53,7 @@ function formatTime(totalSeconds: number) {
 }
 
 export function StopwatchPin({ 
-  pin, onUpdate, onDelete, onDragStart, onOpenInspector, onToggleFullscreen, isFullscreen = false, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement, onToggleFocus, allPins = [] 
+  pin, onUpdate, onDelete, onDragStart, onOpenInspector, onToggleFullscreen, isFullscreen = false, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement, onToggleFocus, onBringToFront, allPins = [] 
 }: StopwatchPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showTaskSelector, setShowTaskSelector] = useState(false);
@@ -138,7 +139,10 @@ export function StopwatchPin({
       >
         <motion.div
           className={`w-full h-full flex flex-col relative transition-all duration-500 ${isSelected ? 'shadow-2xl' : ''} ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}
-          onClick={onSelect}
+          onClick={() => {
+            onSelect();
+            onBringToFront(pin.id);
+          }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => { setIsHovered(false); setShowTaskSelector(false); }}
           style={{

@@ -44,6 +44,7 @@ interface PinProps {
   onSelect: () => void;
   activeFocusTaskId?: string | null;
   onStartFocus?: (taskId: string) => void;
+  onBringToFront: (id: string) => void;
 }
 
 interface TodoItem {
@@ -121,7 +122,7 @@ function darkenColor(hex: string, percent: number): string {
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, activeFocusTaskId, onStartFocus }: PinProps) {
+export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, activeFocusTaskId, onStartFocus, onBringToFront }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -234,7 +235,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
   };
 
   const handleBringToFront = () => {
-    onUpdate(pin.id, { zIndex: Date.now() });
+    onBringToFront(pin.id);
   };
 
   // Todo logic

@@ -77,6 +77,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [fullscreenPinId, setFullscreenPinId] = useState<string | null>(null);
   const [activeFocusTaskId, setActiveFocusTaskId] = useState<string | null>(null);
   const [focusHistory, setFocusHistory] = useState<Record<string, Record<string, number>>>({}); // Date -> TaskID -> Time
+  const [maxZ, setMaxZ] = useState(100);
   const boardRef = useRef<HTMLDivElement>(null);
 
   // Derive weekly data from real focus history
@@ -221,6 +222,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const handleMouseUp = useCallback(() => setDragging(null), []);
 
+  const bringToFront = useCallback((id: string) => {
+    setPins(prev => prev.map(p => p.id === id ? { ...p, zIndex: maxZ + 1 } : p));
+    setMaxZ(z => z + 1);
+  }, [maxZ]);
+
   const findSafePosition = (w: number, h: number) => {
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const padding = 60;
@@ -351,6 +357,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 isSelected={selectedPinId === pin.id}
                 onSelect={() => setSelectedPinId(pin.id)}
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
+                onBringToFront={bringToFront}
                 onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
             );
           } else if (pin.type === 'stopwatch') {
@@ -361,6 +368,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 isSelected={selectedPinId === pin.id}
                 onSelect={() => setSelectedPinId(pin.id)}
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
+                onBringToFront={bringToFront}
                 onToggleFullscreen={(fs) => toggleFullscreen(pin.id, fs)}
                 isFullscreen={false}
                 onToggleFocus={(tid) => setActiveFocusTaskId(tid)}
@@ -395,6 +403,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 isSelected={selectedPinId === pin.id}
                 onSelect={() => setSelectedPinId(pin.id)}
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
+                onBringToFront={bringToFront}
                 dailyTotal={dailyTotal}
                 onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
             );
@@ -406,6 +415,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 isSelected={selectedPinId === pin.id}
                 onSelect={() => setSelectedPinId(pin.id)}
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
+                onBringToFront={bringToFront}
                 weeklyData={weeklyData}
                 focusHistory={focusHistory}
                 allPins={pins}
@@ -419,6 +429,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 isSelected={selectedPinId === pin.id}
                 onSelect={() => setSelectedPinId(pin.id)}
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
+                onBringToFront={bringToFront}
                 activeFocusTaskId={activeFocusTaskId}
                 onStartFocus={(tid) => {
                   const sw = pins.find(p => p.type === 'stopwatch');
@@ -467,6 +478,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                           }));
                         }}
                         onDragStart={() => {}}
+                        onBringToFront={bringToFront}
                         allPins={pins}
                       />
                    );
@@ -477,9 +489,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
         )}
       </AnimatePresence>
 
-      {/* ── Universal Pin Inspector ────────────────────────────────── */}
+      {/* ── Universal Pin Inspector PORTAL ───────────────────────── */}
       <AnimatePresence>
-        {inspectorPinId && (
+        {inspectorPinId && typeof document !== 'undefined' && createPortal(
           <PinInspector
             pin={pins.find(p => p.id === inspectorPinId) || null}
             onUpdate={updatePin}
@@ -489,7 +501,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
             }}
             onClose={() => setInspectorPinId(null)}
             isDark={isDark}
-          />
+          />,
+          document.body
         )}
       </AnimatePresence>
 

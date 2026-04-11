@@ -17,6 +17,7 @@ interface WeeklyAnalysisPinProps {
   isLocked: boolean;
   isSelected?: boolean;
   onSelect: () => void;
+  onBringToFront: (id: string) => void;
   weeklyData: { day: string; hours: number }[];
   focusHistory?: Record<string, Record<string, number>>;
   allPins?: PinData[];
@@ -38,7 +39,7 @@ function getContrastColor(hexColor?: string) {
 }
 
 export function WeeklyAnalysisPin({ 
-  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, weeklyData, focusHistory = {}, allPins = [] 
+  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, onBringToFront, weeklyData, focusHistory = {}, allPins = [] 
 }: WeeklyAnalysisPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
@@ -105,7 +106,10 @@ export function WeeklyAnalysisPin({
     >
       <motion.div
         className={`w-full h-full flex flex-col rounded-xl transition-all duration-300 ${isSelected ? 'shadow-2xl scale-[1.01]' : ''}`}
-        onClick={onSelect}
+        onClick={() => {
+          onSelect();
+          onBringToFront(pin.id);
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
