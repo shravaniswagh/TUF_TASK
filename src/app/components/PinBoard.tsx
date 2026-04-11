@@ -76,7 +76,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [inspectorPinId, setInspectorPinId] = useState<string | null>(null);
   const [fullscreenPinId, setFullscreenPinId] = useState<string | null>(null);
   const [activeFocusTaskId, setActiveFocusTaskId] = useState<string | null>(null);
-  const [focusHistory, setFocusHistory] = useState<Record<string, number>>({});
+  const [focusHistory, setFocusHistory] = useState<Record<string, Record<string, number>>>({}); // Date -> TaskID -> Time
   const boardRef = useRef<HTMLDivElement>(null);
 
   // Derive weekly data from real focus history
@@ -87,9 +87,10 @@ export function PinBoard({ boardId }: { boardId: string }) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
+      const dailySeks = Object.values(focusHistory[dateStr] || {}).reduce((sum, val) => sum + val, 0);
       result.push({
         day: days[d.getDay()],
-        hours: Number(((focusHistory[dateStr] || 0) / 3600).toFixed(1))
+        hours: Number((dailySeks / 3600).toFixed(1))
       });
     }
     return result;
@@ -97,7 +98,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const dailyTotal = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    return focusHistory[today] || 0;
+    return Object.values(focusHistory[today] || {}).reduce((sum, val) => sum + val, 0);
   }, [focusHistory]);
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
@@ -220,22 +221,47 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const handleMouseUp = useCallback(() => setDragging(null), []);
 
+  const findSafePosition = (w: number, h: number) => {
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const padding = 60;
+    let x = screenWidth - w - 80;
+    let y = 100;
+
+    const isColliding = (tx: number, ty: number) => {
+      return pins.some(p => {
+        return !(tx + w < p.x || tx > p.x + p.width || ty + h < p.y || ty > p.y + p.height);
+      });
+    };
+
+    let attempts = 0;
+    while (isColliding(x, y) && attempts < 30) {
+      y += 80;
+      if (y > 700) {
+        y = 100;
+        x -= (w + 40);
+      }
+      if (x < padding) break;
+      attempts++;
+    }
+
+    return { x, y };
+  };
+
   const addPin = (type: PinData['type']) => {
     const maxZ = pins.reduce((m, p) => Math.max(m, p.zIndex ?? 0), 0);
-    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    
-    // Spawn on the right side
     const width = type === 'calendar' ? 480 : (type === 'stopwatch' ? 240 : 300);
-    const initialX = screenWidth - width - 40 - (Math.random() * 40);
+    const height = type === 'calendar' ? 600 : (type === 'stopwatch' ? 150 : 200);
+
+    const { x, y } = findSafePosition(width, height);
     
     const newPin: PinData = {
       id: `${type}-${Date.now()}`,
       type,
       content: type === 'todo' ? JSON.stringify([]) : '',
-      x: initialX,
-      y: 100 + Math.random() * 200,
+      x,
+      y,
       width,
-      height: type === 'calendar' ? 600 : (type === 'stopwatch' ? 150 : 200), // Compressed size for stopwatch
+      height,
       color: '#FFFFFF',
       zIndex: maxZ + 1,
       rotation: (Math.random() - 0.5) * 4,
@@ -243,7 +269,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
     setPins(prev => [...prev, newPin]);
     setShowAddMenu(false);
-    setSelectedPinId(newPin.id); // Auto-select new pin
+    setSelectedPinId(newPin.id);
   };
 
   const updatePin = useCallback((id: string, updates: Partial<PinData>) =>
@@ -347,14 +373,19 @@ export function PinBoard({ boardId }: { boardId: string }) {
                       return t ? t.text : null;
                     } catch(e) { return null; }
                   })() : null}
-                onFocusIncrement={() => {
+                onFocusIncrement={(tid = activeFocusTaskId) => {
+                  if (!tid) return;
                   const today = new Date().toISOString().split('T')[0];
                   setFocusHistory(prev => ({
                     ...prev,
-                    [today]: (prev[today] || 0) + 1
+                    [today]: {
+                      ...(prev[today] || {}),
+                      [tid]: (prev[today]?.[tid] || 0) + 1
+                    }
                   }));
                 }}
-                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+                onDragStart={onDragStart} isDragging={dragging?.id === pin.id}
+                allPins={pins} />
             );
           } else if (pin.type === 'focus-summary') {
             return (
@@ -376,6 +407,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 onSelect={() => setSelectedPinId(pin.id)}
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
                 weeklyData={weeklyData}
+                focusHistory={focusHistory}
+                allPins={pins}
                 onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
             );
           } else {
@@ -422,15 +455,20 @@ export function PinBoard({ boardId }: { boardId: string }) {
                         onToggleFullscreen={(fs) => toggleFullscreen(pin.id, fs)}
                         isFullscreen={true}
                         activeTaskId={activeFocusTaskId}
-                        onFocusIncrement={() => {
+                        onFocusIncrement={(tid = activeFocusTaskId) => {
+                          if (!tid) return;
                           const today = new Date().toISOString().split('T')[0];
                           setFocusHistory(prev => ({
                             ...prev,
-                            [today]: (prev[today] || 0) + 1
+                            [today]: {
+                              ...(prev[today] || {}),
+                              [tid]: (prev[today]?.[tid] || 0) + 1
+                            }
                           }));
                         }}
                         onDragStart={() => {}}
-                     />
+                        allPins={pins}
+                      />
                    );
                 }
                 return null;

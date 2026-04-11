@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Resizable } from 're-resizable';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
-import { BarChart3, GripVertical, X, Settings2 } from 'lucide-react';
+import { BarChart3, GripVertical, X, Settings2, Target } from 'lucide-react';
 import { PinData } from './Pin';
 import { THEME_CONFIG } from '../theme-config';
 
@@ -18,6 +18,8 @@ interface WeeklyAnalysisPinProps {
   isSelected?: boolean;
   onSelect: () => void;
   weeklyData: { day: string; hours: number }[];
+  focusHistory?: Record<string, Record<string, number>>;
+  allPins?: PinData[];
 }
 
 const PIN_HEAD_COLORS: Record<string, string> = THEME_CONFIG.pinHeads;
@@ -36,7 +38,7 @@ function getContrastColor(hexColor?: string) {
 }
 
 export function WeeklyAnalysisPin({ 
-  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, weeklyData 
+  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, weeklyData, focusHistory = {}, allPins = [] 
 }: WeeklyAnalysisPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
@@ -45,6 +47,45 @@ export function WeeklyAnalysisPin({
   const textColorClass = getContrastColor(bgColor);
 
   const totalHours = weeklyData.reduce((acc, curr) => acc + curr.hours, 0).toFixed(1);
+
+  // Derive task breakdown for the week
+  const taskStats = useMemo(() => {
+    const stats: Record<string, { seconds: number; name: string; color: string }> = {};
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    Object.entries(focusHistory).forEach(([date, breakdown]) => {
+      if (new Date(date) >= oneWeekAgo) {
+        Object.entries(breakdown).forEach(([taskId, seconds]) => {
+          if (!stats[taskId]) {
+            // Find task name and color from all pins
+            let taskName = 'Unknown Task';
+            let taskColor = '#64748b';
+
+            allPins.forEach(p => {
+              if (p.type === 'todo' || p.type === 'daily-tasks') {
+                try {
+                  const todos = JSON.parse(p.content || '[]');
+                  const task = todos.find((t: any) => t.id === taskId);
+                  if (task) {
+                    taskName = task.text;
+                    taskColor = p.color || '#6366f1';
+                  }
+                } catch(e) {}
+              }
+            });
+
+            stats[taskId] = { seconds: 0, name: taskName, color: taskColor };
+          }
+          stats[taskId].seconds += seconds;
+        });
+      }
+    });
+
+    return Object.entries(stats)
+      .sort((a, b) => b[1].seconds - a[1].seconds)
+      .slice(0, 6); // Top 6 tasks
+  }, [focusHistory, allPins]);
 
   return (
     <Resizable
@@ -126,7 +167,7 @@ export function WeeklyAnalysisPin({
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col p-6">
+        <div className="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-indigo-500" />
@@ -134,7 +175,7 @@ export function WeeklyAnalysisPin({
             </div>
           </div>
 
-          <div className="flex-1 w-full min-h-0">
+          <div className="w-full h-32 shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyData}>
                 <XAxis 
@@ -169,8 +210,31 @@ export function WeeklyAnalysisPin({
             </ResponsiveContainer>
           </div>
 
-          <div className={`mt-6 pt-4 border-t ${isDark ? 'border-white/5' : 'border-slate-100'} flex items-center justify-between`}>
-            <span className={`text-[10px] font-bold uppercase tracking-widest opacity-40 ${textColorClass}`}>Total Focus</span>
+          {/* Aesthetic Task Legend */}
+          {taskStats.length > 0 && (
+            <div className="mt-8 space-y-3">
+               <div className="flex items-center gap-2 mb-4">
+                  <Target className="w-3 h-3 text-indigo-500" />
+                  <span className="text-[9px] font-black uppercase tracking-widest opacity-30">Top Focused Tasks</span>
+               </div>
+               <div className="grid grid-cols-1 gap-2">
+                  {taskStats.map(([id, stat]) => (
+                    <div key={id} className="flex items-center justify-between group">
+                       <div className="flex items-center gap-2 overflow-hidden">
+                          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: stat.color }} />
+                          <span className={`text-[11px] font-bold truncate opacity-70 group-hover:opacity-100 transition-opacity ${textColorClass}`}>{stat.name}</span>
+                       </div>
+                       <span className={`text-[10px] font-black tabular-nums opacity-40 ${textColorClass}`}>
+                          {(stat.seconds / 3600).toFixed(1)}h
+                       </span>
+                    </div>
+                  ))}
+               </div>
+            </div>
+          )}
+
+          <div className={`mt-auto pt-4 border-t ${isDark ? 'border-white/5' : 'border-slate-100'} flex items-center justify-between shrink-0`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest opacity-40 ${textColorClass}`}>Total Capacity</span>
             <span className={`text-sm font-black ${textColorClass}`}>{totalHours} Hours</span>
           </div>
         </div>

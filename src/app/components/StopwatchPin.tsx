@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Resizable } from 're-resizable';
-import { X, GripVertical, Play, Pause, RotateCcw, Maximize2, Minimize2, Settings2 } from 'lucide-react';
+import { X, GripVertical, Play, Pause, RotateCcw, Maximize2, Minimize2, Settings2, ListTodo, Circle, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PinData } from './Pin';
 import { THEME_CONFIG } from '../theme-config';
@@ -22,6 +22,7 @@ interface StopwatchPinProps {
   onFocusIncrement?: () => void;
   activeTaskId?: string | null;
   activeTaskName?: string | null;
+  allPins?: PinData[];
 }
 
 const PIN_HEAD_COLORS: Record<string, string> = THEME_CONFIG.pinHeads;
@@ -44,16 +45,17 @@ function formatTime(totalSeconds: number) {
   const m = Math.floor((totalSeconds % 3600) / 60);
   const s = totalSeconds % 60;
   return [
-    h > 0 ? h.toString().padStart(2, '0') : null,
+    h.toString().padStart(2, '0'),
     m.toString().padStart(2, '0'),
     s.toString().padStart(2, '0')
-  ].filter(Boolean).join(':');
+  ].join(':');
 }
 
 export function StopwatchPin({ 
-  pin, onUpdate, onDelete, onDragStart, onOpenInspector, onToggleFullscreen, isFullscreen = false, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement 
+  pin, onUpdate, onDelete, onDragStart, onOpenInspector, onToggleFullscreen, isFullscreen = false, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement, onToggleFocus, allPins = [] 
 }: StopwatchPinProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [showTaskSelector, setShowTaskSelector] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(pin.totalSeconds || 0);
   
   // Keep local seconds in sync with external updates (like reset)
@@ -75,6 +77,20 @@ export function StopwatchPin({
     }
     return () => clearInterval(interval);
   }, [pin.isPaused, pin.id, onUpdate, onFocusIncrement]);
+
+  // Derive incomplete tasks from all pins
+  const availableTasks = allPins.flatMap(p => {
+    if (p.type === 'todo' || p.type === 'daily-tasks') {
+      try {
+        const todos = JSON.parse(p.content || '[]');
+        return todos.filter((t: any) => !t.completed).map((t: any) => ({
+          ...t,
+          parentColor: p.color || '#6366f1'
+        }));
+      } catch (e) { return []; }
+    }
+    return [];
+  });
 
   const handleToggle = () => {
     onUpdate(pin.id, { isPaused: !pin.isPaused });
@@ -124,7 +140,7 @@ export function StopwatchPin({
           className={`w-full h-full flex flex-col relative transition-all duration-500 overflow-hidden ${isSelected ? 'shadow-2xl' : ''} ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}
           onClick={onSelect}
           onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
+          onMouseLeave={() => { setIsHovered(false); setShowTaskSelector(false); }}
           style={{
             backgroundColor: bgColor,
             boxShadow: isFullscreen ? 'none' : (isSelected ? '0 32px 64px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.07)'),
@@ -231,6 +247,52 @@ export function StopwatchPin({
                    )}
                 </div>
               </button>
+
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowTaskSelector(!showTaskSelector); }}
+                  className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
+                  style={{ color: clockTextColor }}
+                  title="Select Task"
+                >
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
+                    <ListTodo className={isFullscreen ? "w-8 h-8" : "w-5 h-5"} />
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {showTaskSelector && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute bottom-full mb-3 right-0 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-black/5 p-3 max-h-64 overflow-y-auto custom-scrollbar z-[100]"
+                    >
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 px-2">Select Focus Task</p>
+                      <div className="space-y-1">
+                        {availableTasks.length === 0 ? (
+                           <div className="px-3 py-4 text-center text-xs text-slate-400 italic">No active tasks found.</div>
+                        ) : availableTasks.map(task => (
+                          <button
+                            key={task.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleFocus?.(task.id);
+                              setShowTaskSelector(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTaskId === task.id ? 'bg-indigo-500 text-white shadow-lg' : 'hover:bg-black/5 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                          >
+                            <div className="w-4 h-4 flex-shrink-0" style={{ color: activeTaskId === task.id ? 'white' : task.parentColor }}>
+                               {task.completed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                            </div>
+                            <span className="text-sm font-bold truncate text-left">{task.text}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {isFullscreen && activeTaskName && (
