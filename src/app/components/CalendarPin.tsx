@@ -40,8 +40,14 @@ interface CalendarPinProps {
 
 export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, onBringToFront }: CalendarPinProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const isDarkNow = isDark;
-  const textColorClass = 'text-slate-500';
+  const getContrastColor = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 140 ? 'text-slate-600' : 'text-white';
+  };
+  const textColorClass = getContrastColor(pin.color || '#ffffff');
 
   const handleBringToFront = () => {
     onBringToFront(pin.id);
@@ -116,7 +122,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
           handleBringToFront();
         }}
         style={{
-          backgroundColor: isDarkNow ? '#ffffff' : (pin.color || '#ffffff'),
+          backgroundColor: isDark ? '#ffffff' : (pin.color || '#ffffff'),
           boxShadow: isSelected
             ? '0 24px 48px rgba(0,0,0,0.2), 0 12px 24px rgba(0,0,0,0.15)'
             : (isDragging ? '0 24px 48px rgba(0,0,0,0.2)' : '0 4px 20px rgba(0,0,0,0.12)'),
@@ -127,6 +133,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
         {/* Drag Handle Header */}
           <div
             className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 border-b border-black/5"
+            style={{ backgroundColor: textColorClass.includes('black') ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.08)' }}
           >
           <div 
             onMouseDown={(e) => {
@@ -139,8 +146,8 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
             onMouseLeave={() => setIsHovered(false)}
             className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
-            <GripVertical className={`w-3.5 h-3.5 ${textColorClass}`} />
-            <span className={`text-[10px] font-black uppercase tracking-widest ${textColorClass}`}>Calendar</span>
+            <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
+            <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>Calendar</span>
           </div>
           
           <div className="flex items-center gap-1">
@@ -189,9 +196,9 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
             }}
             headerImage={pin.headerImage}
             curveColor={pin.curveColor}
-            backgroundColor={isDarkNow ? '#ffffff' : (pin.color || '#ffffff')}
+            backgroundColor={isDark ? '#ffffff' : (pin.color || '#ffffff')}
             zoomLevel={zoomLevel}
-            isDark={isDarkNow}
+            isDark={isDark}
           />
         </div>
       </div>

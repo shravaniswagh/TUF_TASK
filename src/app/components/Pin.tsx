@@ -78,7 +78,7 @@ function getContrastColor(hexColor?: string) {
     
     // Brightness formula
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
+    return brightness > 140 ? 'text-black' : 'text-white';
   } catch (e) {
     return 'text-slate-900';
   }

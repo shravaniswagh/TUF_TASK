@@ -32,7 +32,7 @@ function getContrastColor(hexColor?: string) {
   const g = parseInt(fullHex.substring(2, 4), 16);
   const b = parseInt(fullHex.substring(4, 6), 16);
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
+  return brightness > 140 ? 'text-black' : 'text-white';
 }
 
 export function FocusSummaryPin({ 
@@ -93,8 +93,8 @@ export function FocusSummaryPin({
 
         {/* Header */}
         <div
-          className="flex items-center justify-between px-5 pt-5 pb-2 shrink-0"
-          style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+          className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0"
+          style={{ backgroundColor: textColorClass === 'text-black' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.08)' }}
         >
           <div 
             onMouseDown={(e) => {
@@ -103,10 +103,10 @@ export function FocusSummaryPin({
               e.stopPropagation();
               onDragStart(pin.id, e);
             }}
-            className="flex items-center gap-2 cursor-grab active:cursor-grabbing grow"
+            className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
-            <GripVertical className="w-4 h-4 text-slate-400" />
-            <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-900'}`}>Focus Summary</span>
+            <GripVertical className="w-3.5 h-3.5 text-slate-400" />
+            <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>Focus Summary</span>
           </div>
           <div className="flex items-center gap-1">
             <AnimatePresence>

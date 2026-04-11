@@ -38,8 +38,9 @@ function getContrastColor(hexColor?: string) {
   const r = parseInt(fullHex.substring(0, 2), 16);
   const g = parseInt(fullHex.substring(2, 4), 16);
   const b = parseInt(fullHex.substring(4, 6), 16);
+  // Brightness formula
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
+  return brightness > 140 ? 'text-black' : 'text-white';
 }
 
 function formatTime(totalSeconds: number) {
@@ -177,21 +178,21 @@ export function StopwatchPin({
           <div className={`w-full h-full flex flex-col overflow-hidden ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}>
             {!isFullscreen && (
                 <div
-                  className="flex items-center justify-between px-3 pt-3 pb-0 shrink-0"
+                  className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0"
                   style={{ backgroundColor: clockTextColor === '#ffffff' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
                 >
-                <div 
-                  onMouseDown={(e) => {
-                    if (isLocked) return;
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onDragStart(pin.id, e);
-                  }}
-                  className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
-                >
-                  <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
-                  <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-900'}`}>Stopwatch</span>
-                </div>
+                  <div 
+                    onMouseDown={(e) => {
+                      if (isLocked) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDragStart(pin.id, e);
+                    }}
+                    className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
+                  >
+                    <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
+                    <span className={`text-xs capitalize tracking-wide font-medium ${clockTextColor === '#ffffff' ? 'text-white' : 'text-black'}`}>Stopwatch</span>
+                  </div>
                 
                 <div className="flex items-center gap-1.5">
                    <AnimatePresence>
