@@ -181,7 +181,7 @@ export function StopwatchPin({
         className="w-full h-full"
       >
         <motion.div
-          className={`w-full h-full flex flex-col relative transition-all duration-500 overflow-hidden ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''} ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}
+          className={`w-full h-full flex flex-col relative transition-all duration-500 overflow-hidden ${isSelected ? 'shadow-2xl' : ''} ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}
           onClick={onSelect}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}

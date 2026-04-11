@@ -71,7 +71,7 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 380, opacity: 0 }}
       transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-      className="fixed top-0 right-0 bottom-0 w-[350px] bg-white/70 dark:bg-slate-900/70 backdrop-blur-[32px] shadow-[-32px_0_64px_rgba(0,0,0,0.1)] border-l border-white/40 dark:border-slate-800/40 z-[2147483647] flex flex-col overflow-hidden"
+      className="fixed top-0 right-0 bottom-0 w-[350px] bg-white/70 dark:bg-slate-900/70 backdrop-blur-[32px] shadow-[-32px_0_64px_rgba(0,0,0,0.1)] border-l border-white/40 dark:border-slate-800/40 z-[99999999] flex flex-col overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Floating Close Button */}
@@ -82,19 +82,8 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
         <X className="w-5 h-5" />
       </button>
 
-      {/* Header Info (Aesthetic Only, No Sidebar Look) */}
-      <div className="p-10 pb-4 shrink-0">
-        <div className="flex items-center gap-4 opacity-40">
-           <div className="w-10 h-10 rounded-[14px] flex items-center justify-center border border-slate-200" style={{ backgroundColor: accentColor + '10' }}>
-              <Settings2 className="w-5 h-5" style={{ color: accentColor }} />
-           </div>
-           <div>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black tracking-[0.2em]">
-                Editing {pin.type.replace('-', ' ')}
-              </p>
-           </div>
-        </div>
-      </div>
+      {/* Header Space (Minimal for close btn) */}
+      <div className="p-10 pb-2 shrink-0 h-24" />
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-6">

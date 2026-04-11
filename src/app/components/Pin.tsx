@@ -317,7 +317,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-shadow duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''}`}
+        className={`w-full h-full flex flex-col relative transition-all duration-500 overflow-hidden ${isSelected ? 'shadow-2xl' : ''} rounded-xl`}
         onClick={(e) => {
           e.stopPropagation();
           onSelect();

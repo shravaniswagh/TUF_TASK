@@ -63,7 +63,7 @@ export function WeeklyAnalysisPin({
       }}
     >
       <motion.div
-        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl scale-[1.01]' : ''}`}
+        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-all duration-300 ${isSelected ? 'shadow-2xl scale-[1.01]' : ''}`}
         onClick={onSelect}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

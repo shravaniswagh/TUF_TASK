@@ -108,7 +108,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className={`w-full h-full flex flex-col rounded-xl shadow-sm relative overflow-hidden transition-shadow duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''}`}
+        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-all duration-300 ${isSelected ? 'shadow-2xl' : 'shadow-sm'} border border-black/5`}
         onClick={(e) => {
           e.stopPropagation();
           onSelect();
