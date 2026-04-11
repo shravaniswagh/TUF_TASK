@@ -186,7 +186,7 @@ export function StopwatchPin({
                       if (isLocked) return;
                       e.preventDefault();
                       e.stopPropagation();
-                      onBringToFront(pin.id);
+                      onDragStart(pin.id, e);
                     }}
                     className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
                   >

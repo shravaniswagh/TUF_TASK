@@ -197,40 +197,43 @@ export function PinBoard({ boardId }: { boardId: string }) {
     fetchPins();
   }, [boardId]);
 
-  // Persistent Save
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  // 1. Board Configuration Save (Pins, Theme, Color)
+  const configSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (!hasLoaded) return;
-    
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    if (configSaveTimeoutRef.current) clearTimeout(configSaveTimeoutRef.current);
 
-    saveTimeoutRef.current = setTimeout(() => {
-      // Create a clean copy of pins to avoid serializing internal state
-      const cleaned = pins.map(p => {
-        const c: any = {};
-        Object.keys(p).forEach(k => {
-          // @ts-ignore
-          const v = p[k];
-          if (v !== undefined) c[k] = v;
-        });
-        return c;
-      });
-
+    configSaveTimeoutRef.current = setTimeout(() => {
       setDoc(doc(db, 'boards', boardId), {
-        pins: cleaned,
+        pins: pins,
         boardBackgroundColor: boardColor,
         theme: manualTheme,
         isLocked: isLocked,
         lastUpdated: new Date().toISOString(),
-        focusHistory: focusHistory,
       }, { merge: true }).catch(console.error);
     }, 1500);
 
     return () => {
-      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      if (configSaveTimeoutRef.current) clearTimeout(configSaveTimeoutRef.current);
     };
-  }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked, focusHistory]);
+  }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked]);
+
+  // 2. Focus History Save (Analytics) - Less frequent to prevent blocking config saves
+  const statsSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (!hasLoaded) return;
+    if (statsSaveTimeoutRef.current) clearTimeout(statsSaveTimeoutRef.current);
+
+    statsSaveTimeoutRef.current = setTimeout(() => {
+      setDoc(doc(db, 'boards', boardId), {
+        focusHistory: focusHistory,
+      }, { merge: true }).catch(console.error);
+    }, 10000); // 10 seconds for stats
+
+    return () => {
+      if (statsSaveTimeoutRef.current) clearTimeout(statsSaveTimeoutRef.current);
+    };
+  }, [focusHistory, hasLoaded, boardId]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
   const onDragStart = useCallback((id: string, e: React.MouseEvent) => {

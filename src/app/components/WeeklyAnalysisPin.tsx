@@ -173,7 +173,7 @@ export function WeeklyAnalysisPin({
             {!isLocked && (
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
-                className={`w-8 h-8 flex items-center justify-center rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm group`}
+                className={`w-8 h-8 flex items-center justify-center rounded-xl hover:bg-rose-500 hover:text-white transition-all group`}
               >
                 <X className={`w-3.5 h-3.5 ${textColorClass === 'text-white' ? 'text-white' : 'text-slate-500'} group-hover:text-white`} />
               </button>
