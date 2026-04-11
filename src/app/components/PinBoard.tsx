@@ -204,8 +204,18 @@ export function PinBoard({ boardId }: { boardId: string }) {
     if (configSaveTimeoutRef.current) clearTimeout(configSaveTimeoutRef.current);
 
     configSaveTimeoutRef.current = setTimeout(() => {
+      const cleanedPins = pins.map(p => {
+        const c: any = {};
+        Object.keys(p).forEach(k => {
+          // @ts-ignore
+          const v = p[k];
+          if (v !== undefined) c[k] = v;
+        });
+        return c;
+      });
+
       setDoc(doc(db, 'boards', boardId), {
-        pins: pins,
+        pins: cleanedPins,
         boardBackgroundColor: boardColor,
         theme: manualTheme,
         isLocked: isLocked,
