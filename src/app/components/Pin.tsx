@@ -35,6 +35,8 @@ interface PinProps {
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
+  isSelected?: boolean;
+  onSelect: () => void;
 }
 
 interface TodoItem {
@@ -44,7 +46,6 @@ interface TodoItem {
 }
 
 const PIN_HEAD_COLORS: Record<string, string> = THEME_CONFIG.pinHeads;
-const NOTE_COLORS = THEME_CONFIG.pinPalette;
 
 function getContrastColor(hexColor?: string) {
   if (!hexColor || hexColor === 'transparent') return 'text-slate-700';
@@ -113,15 +114,12 @@ function darkenColor(hex: string, percent: number): string {
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked }: PinProps) {
+export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked, isSelected, onSelect }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [noteContent, setNoteContent] = useState(pin.content);
   const [labelContent, setLabelContent] = useState(pin.label || '');
   const [showImageInput, setShowImageInput] = useState(false);
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showImageControls, setShowImageControls] = useState(false);
-  const [showFontPicker, setShowFontPicker] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [newTodo, setNewTodo] = useState('');
   const [dailyNotes, setDailyNotes] = useState<any[]>([]);
@@ -129,19 +127,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
   const labelRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const paletteButtonRef = useRef<HTMLButtonElement>(null);
-  const [palettePos, setPalettePos] = useState({ x: 0, y: 0 });
-
-  useLayoutEffect(() => {
-    if (showColorPicker && paletteButtonRef.current) {
-      const rect = paletteButtonRef.current.getBoundingClientRect();
-      // Position palette menu to the left of the button to avoid off-screen issues
-      setPalettePos({
-        x: Math.max(20, rect.right - 420), // Width is ~400px now with 15x2
-        y: rect.bottom + 12
-      });
-    }
-  }, [showColorPicker]);
 
   useEffect(() => {
     if (pin.type !== 'clock') return;
@@ -279,19 +264,14 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Close dropdowns when clicking outside
+  // Assign a stable random rotation on first render if not set
   useEffect(() => {
-    const handleClickOutside = () => {
-      setShowColorPicker(false);
-      setShowImageControls(false);
-      setShowFontPicker(false);
-    };
-
-    if (showColorPicker || showImageControls || showFontPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+    if (pin.rotation === undefined) {
+      const tilt = (Math.random() - 0.5) * 6; // –3° to +3°
+      onUpdate(pin.id, { rotation: tilt });
     }
-  }, [showColorPicker, showImageControls, showFontPicker]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const daysRemaining =
     pin.type === 'countdown' && pin.content
@@ -338,18 +318,23 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
         topRight: true, bottomRight: true, bottomLeft: true, topLeft: true,
       }}
     >
+    >
       <motion.div
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className="w-full h-full flex flex-col rounded-xl overflow-hidden"
-        onClick={handleBringToFront}
+        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-shadow duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect();
+          handleBringToFront();
+        }}
         style={{
           backgroundColor: bgColor,
-          boxShadow: isDragging
+          boxShadow: isSelected 
             ? '0 20px 40px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.1)'
-            : '0 2px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)',
-          border: '1px solid rgba(0,0,0,0.05)',
+            : (isDragging ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 12px rgba(0,0,0,0.07)'),
+          border: isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)',
           // @ts-ignore
           '--scrollbar-color': scrollColor,
           // @ts-ignore
@@ -386,185 +371,16 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
             </span>
           </div>
           <div className="flex items-center gap-1">
-            {/* Font picker */}
-            {(pin.type === 'note' || pin.type === 'countdown' || pin.type === 'todo' || pin.type === 'clock') && (
-              <div className="relative">
-                <button
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => setShowFontPicker(!showFontPicker)}
-                  className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${getContrastColor(bgColor).includes('slate-50') ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
-                  title="Font options"
-                >
-                  <Settings2 className={`w-3.5 h-3.5 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
-                </button>
-                {showFontPicker && (
-                  <div
-                    className="absolute top-6 right-0 bg-white rounded-lg shadow-xl border border-slate-200 p-2 space-y-2 z-50 w-36"
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.nativeEvent.stopImmediatePropagation();
-                    }}
-                  >
-                    <div>
-                      <label className="text-slate-600 block mb-1 text-xs">Font:</label>
-                      <div className="space-y-1 mb-3 max-h-[120px] overflow-auto custom-scrollbar pr-1">
-                        {[
-                          { name: 'Default', value: 'system-ui' },
-                          { name: 'Typewriter', value: "'Courier New', monospace" },
-                          { name: 'Playful', value: "'Comic Sans MS', cursive" },
-                          { name: 'Elegant', value: "'Georgia', serif" },
-                          { name: 'Handwritten', value: "'Brush Script MT', cursive" },
-                        ].map((f) => (
-                          <button
-                            key={f.value}
-                            onClick={() => onUpdate(pin.id, { fontFamily: f.value })}
-                            className={`w-full px-2 py-1.5 text-xs text-left rounded-md transition-colors ${
-                              (pin.fontFamily || 'system-ui') === f.value 
-                                ? 'bg-indigo-50 text-indigo-600 font-bold border border-indigo-100' 
-                                : 'hover:bg-slate-50 text-slate-600'
-                            }`}
-                            style={{ fontFamily: f.value }}
-                          >
-                            {f.name}
-                          </button>
-                        ))}
-                      </div>
-
-                      <select
-                        value={pin.fontSize || '14px'}
-                        onChange={(e) => {
-                          onUpdate(pin.id, { fontSize: e.target.value });
-                        }}
-                        className="w-full px-2 py-1 border border-slate-200 rounded text-xs mb-3"
-                      >
-                        <option value="12px">Extra Small</option>
-                        <option value="14px">Small</option>
-                        <option value="16px">Medium</option>
-                        <option value="20px">Large</option>
-                        <option value="24px">Extra Large</option>
-                        <option value="32px">Huge</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Color picker */}
-            {(pin.type === 'note' || pin.type === 'image' || pin.type === 'todo' || pin.type === 'daily-tasks' || pin.type === 'countdown' || pin.type === 'clock') && (
-              <div className="relative">
-                <button
-                  ref={paletteButtonRef}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => setShowColorPicker(!showColorPicker)}
-                  className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                >
-                  <Palette className={`w-3.5 h-3.5 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
-                </button>
-                {showColorPicker && createPortal(
-                  <div
-                    className="fixed bg-slate-900/95 backdrop-blur-xl rounded-[32px] shadow-2xl border border-white/10 p-6 z-[2147483647] animate-in fade-in zoom-in duration-150 w-max"
-                    style={{
-                      left: palettePos.x,
-                      top: palettePos.y,
-                    }}
-                    onMouseDown={(e) => {
-                      e.stopPropagation();
-                      e.nativeEvent.stopImmediatePropagation();
-                    }}
-                  >
-                    <div className="space-y-6">
-                      {/* Section: Body */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 px-1">
-                          <span className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Body</span>
-                          <div className="h-[1px] flex-1 bg-white/5" />
-                        </div>
-                        
-                        <div className="flex flex-col gap-2.5">
-                          {[0, 1].map((rowIndex) => (
-                            <div key={rowIndex} className="flex flex-row pl-3">
-                              {NOTE_COLORS.slice(rowIndex * 15, (rowIndex + 1) * 15).map((color, i) => (
-                                <motion.button
-                                  key={color}
-                                  whileHover={{ scale: 1.3, zIndex: 20, y: -2 }}
-                                  whileTap={{ scale: 0.9 }}
-                                  onMouseDown={(e) => e.stopPropagation()}
-                                  onClick={() => onUpdate(pin.id, { color })}
-                                  className={`w-7 h-7 rounded-full border-2 border-slate-900 shadow-lg transition-shadow duration-200 ${i === 0 ? '' : '-ml-2.5'} ${pin.color === color ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 z-10' : 'z-0'}`}
-                                  style={{ backgroundColor: color, position: 'relative' }}
-                                />
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Section: Text */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 px-1">
-                          <span className="text-[10px] font-black tracking-[0.2em] text-slate-500 uppercase">Text</span>
-                          <div className="h-[1px] flex-1 bg-white/5" />
-                        </div>
-                        
-                        <div className="flex flex-row pl-3">
-                          {[
-                            { name: 'Auto', value: undefined },
-                            { name: 'Black', value: '#000000' },
-                            { name: 'White', value: '#FFFFFF' },
-                            { name: 'Blue', value: '#3B82F6' },
-                            { name: 'Rose', value: '#F43F5E' },
-                            { name: 'Emerald', value: '#10B981' },
-                            { name: 'Amber', value: '#F59E0B' },
-                            { name: 'Indigo', value: '#6366F1' },
-                            { name: 'Violet', value: '#8B5CF6' },
-                            { name: 'Sky', value: '#0EA5E9' },
-                            { name: 'Slate', value: '#64748B' },
-                            { name: 'RoseGold', value: '#FB7185' },
-                          ].map((c, i) => (
-                            <motion.button
-                              key={c.name}
-                              whileHover={{ scale: 1.3, zIndex: 20, y: -2 }}
-                              whileTap={{ scale: 0.9 }}
-                              onMouseDown={(e) => e.stopPropagation()}
-                              onClick={() => onUpdate(pin.id, { textColor: c.value })}
-                              className={`w-7 h-7 rounded-full border-2 border-slate-900 shadow-lg transition-shadow duration-200 flex items-center justify-center ${i === 0 ? '' : '-ml-2.5'} ${
-                                pin.textColor === c.value || (!pin.textColor && !c.value)
-                                  ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 z-10' 
-                                  : 'z-0'
-                              }`}
-                              style={{ backgroundColor: c.value || (isDark ? '#F1F5F9' : '#0F172A'), position: 'relative' }}
-                            >
-                              {(pin.textColor === c.value || (!pin.textColor && !c.value)) && (
-                                <div className={`w-1.5 h-1.5 rounded-full ${c.value === '#FFFFFF' ? 'bg-slate-900' : 'bg-white'}`} />
-                              )}
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>,
-                  document.body
-                )}
-              </div>
-            )}
-            {/* Image controls */}
-            {pin.type === 'image' && pin.content && (
-              <button
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={() => setShowImageControls(!showImageControls)}
-                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                title="Image controls"
-              >
-                <ImageIcon className="w-3 h-3 text-slate-500" />
-              </button>
-            )}
             {!isLocked && (
               <button
                 onMouseDown={(e) => e.stopPropagation()}
-                onClick={() => onDelete(pin.id)}
-                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(pin.id);
+                }}
+                className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${getContrastColor(bgColor).includes('slate-50') ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
               >
-                <X className="w-3 h-3 text-slate-500" />
+                <X className={`w-3 h-3 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
               </button>
             )}
           </div>
@@ -627,41 +443,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                       objectPosition: pin.imageObjectPosition || 'center',
                     }}
                   />
-                  {showImageControls && (
-                    <div
-                      className="absolute top-2 right-2 bg-white/95 rounded-lg shadow-lg p-2 space-y-2 text-xs"
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        e.nativeEvent.stopImmediatePropagation();
-                      }}
-                    >
-                      <div>
-                        <label className="text-slate-600 block mb-1">Fit:</label>
-                        <select
-                          value={pin.imageObjectFit || 'cover'}
-                          onChange={(e) =>
-                            onUpdate(pin.id, {
-                              imageObjectFit: e.target.value as any,
-                            })
-                          }
-                          className="w-full px-2 py-1 border border-slate-200 rounded text-xs"
-                        >
-                          <option value="cover">Cover</option>
-                          <option value="contain">Contain</option>
-                          <option value="fill">Fill</option>
-                        </select>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setShowImageInput(true);
-                          setShowImageControls(false);
-                        }}
-                        className="w-full px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-xs"
-                      >
-                        Change Image
-                      </button>
-                    </div>
-                  )}
                 </div>
               ) : showImageInput ? (
                 <div

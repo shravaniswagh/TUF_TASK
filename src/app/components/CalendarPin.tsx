@@ -32,45 +32,17 @@ interface CalendarPinProps {
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
+  isSelected?: boolean;
+  onSelect: () => void;
 }
 
-export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked }: CalendarPinProps) {
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
+export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked, isSelected, onSelect }: CalendarPinProps) {
   const isDarkNow = isDark;
 
   const handleBringToFront = () => {
     onUpdate(pin.id, { zIndex: Date.now() });
   };
   
-  const handleColorChange = (color: string) => {
-    onUpdate(pin.id, { color });
-    setShowColorPicker(false);
-  };
-
-  const handleCurveColorChange = (curveColor: string) => {
-    onUpdate(pin.id, { curveColor });
-  };
-
-  const handleImageUpdate = (headerImage: string) => {
-    onUpdate(pin.id, { headerImage });
-  };
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
-        setShowSettings(false);
-      }
-    };
-
-    if (showSettings) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showSettings]);
-
   // No rotation for calendar - keep it straight
   useEffect(() => {
     if (pin.rotation === undefined) {
@@ -133,112 +105,20 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className="w-full h-full flex flex-col rounded-xl shadow-sm relative overflow-hidden"
-        onClick={handleBringToFront}
+        className={`w-full h-full flex flex-col rounded-xl shadow-sm relative overflow-hidden transition-shadow duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect();
+          handleBringToFront();
+        }}
         style={{
           backgroundColor: isDarkNow ? '#ffffff' : (pin.color || '#ffffff'),
-          boxShadow: isDragging
+          boxShadow: isSelected
             ? '0 24px 48px rgba(0,0,0,0.2), 0 12px 24px rgba(0,0,0,0.15)'
-            : '0 4px 20px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)',
-          border: '1px solid rgba(0,0,0,0.08)',
+            : (isDragging ? '0 24px 48px rgba(0,0,0,0.2)' : '0 4px 20px rgba(0,0,0,0.12)'),
+          border: isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.08)',
         }}
       >
-        {/* Settings Overlay */}
-        <AnimatePresence>
-          {showSettings && (
-            <motion.div
-              ref={settingsRef}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="absolute right-2 top-12 bottom-2 w-64 bg-white/95 backdrop-blur-md z-50 rounded-lg shadow-2xl border border-slate-200 p-4 overflow-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
-                <h3 className="text-sm font-bold text-slate-800">Calendar Settings</h3>
-                <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-4 h-4 text-slate-400" />
-                </button>
-              </div>
-
-              {/* Background Color */}
-              <div className="mb-6">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Background Color</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {CALENDAR_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => handleColorChange(color)}
-                      className={`w-full aspect-square rounded-full border-2 transition-all hover:scale-110 ${pin.color === color ? 'border-slate-800 shadow-md' : 'border-transparent'}`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Curve Color */}
-              <div className="mb-6">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Curve Color</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {CURVE_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => handleCurveColorChange(color)}
-                      className={`w-full aspect-square rounded-full border-2 transition-all hover:scale-110 ${pin.curveColor === color ? 'border-slate-800 shadow-md' : 'border-transparent'}`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Header Image */}
-              <div className="mb-4">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">Header Image</label>
-                <div className="flex flex-col gap-3">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Paste image URL..."
-                      value={pin.headerImage || ''}
-                      onChange={(e) => handleImageUpdate(e.target.value)}
-                      className="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-slate-50 transition-all font-medium"
-                    />
-                    <ImageIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  </div>
-                  
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            const result = event.target?.result as string;
-                            handleImageUpdate(result);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                      className="hidden"
-                      id="calendar-image-upload"
-                    />
-                    <label
-                      htmlFor="calendar-image-upload"
-                      className="flex items-center justify-center gap-2 w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg cursor-pointer transition-colors border border-slate-200 shadow-sm"
-                    >
-                      <ImageIcon className="w-3.5 h-3.5" />
-                      Upload Local Image
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-
         {/* Drag Handle Header */}
         <div
           onMouseDown={(e) => {
@@ -258,16 +138,6 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
           </div>
           
           <div className="flex items-center gap-1">
-            {!isLocked && (
-              <button
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={() => setShowSettings(!showSettings)}
-                className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${showSettings ? 'bg-slate-200 text-slate-800' : 'hover:bg-black/10 text-slate-500'}`}
-                title="Settings"
-              >
-                <Settings className="w-3 h-3" />
-              </button>
-            )}
             {!isLocked && (
               <button
                 onClick={(e) => {
@@ -314,4 +184,4 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, isD
       </motion.div>
     </Resizable>
   );
-}
+}

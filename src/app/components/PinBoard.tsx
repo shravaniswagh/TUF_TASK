@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Pin, PinData } from './Pin';
 import { CalendarPin } from './CalendarPin';
+import { PinInspector } from './PinInspector';
 import { THEME_CONFIG } from '../theme-config';
 import {
   Plus,
@@ -65,6 +66,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [clearConfirmInput, setClearConfirmInput] = useState('');
   const [boardColor, setBoardColor] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragState | null>(null);
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
@@ -191,7 +193,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
     const width = type === 'calendar' ? 480 : 300;
     const initialX = screenWidth - width - 40 - (Math.random() * 40);
     
-    setPins(prev => [...prev, {
+    const newPin: PinData = {
       id: `${type}-${Date.now()}`,
       type,
       content: type === 'todo' ? JSON.stringify([]) : '',
@@ -202,8 +204,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
       color: '#FFFFFF',
       zIndex: maxZ + 1,
       rotation: (Math.random() - 0.5) * 4,
-    }]);
+    };
+
+    setPins(prev => [...prev, newPin]);
     setShowAddMenu(false);
+    setSelectedPinId(newPin.id); // Auto-select new pin
   };
 
   const updatePin = useCallback((id: string, updates: Partial<PinData>) =>
@@ -235,6 +240,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onClick={(e) => {
+        // Click background to deselect
+        if (e.target === boardRef.current) {
+          setSelectedPinId(null);
+        }
+      }}
       className={`w-full h-full relative transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
       style={{
         backgroundColor: currentBoardBg || baseBg,
@@ -270,14 +281,34 @@ export function PinBoard({ boardId }: { boardId: string }) {
           <CalendarPin key={pin.id} pin={pin} boardId={boardId}
             onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
             isLocked={isLocked}
+            isSelected={selectedPinId === pin.id}
+            onSelect={() => setSelectedPinId(pin.id)}
             onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
         ) : (
           <Pin key={pin.id} pin={pin} boardId={boardId}
             onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
             isLocked={isLocked}
+            isSelected={selectedPinId === pin.id}
+            onSelect={() => setSelectedPinId(pin.id)}
             onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
         )
       ))}
+
+      {/* ── Universal Pin Inspector ────────────────────────────────── */}
+      <AnimatePresence>
+        {selectedPinId && (
+          <PinInspector
+            pin={pins.find(p => p.id === selectedPinId) || null}
+            onUpdate={updatePin}
+            onDelete={(id) => {
+              deletePin(id);
+              setSelectedPinId(null);
+            }}
+            onClose={() => setSelectedPinId(null)}
+            isDark={isDark}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ── Actions Menu PORTAL ────────────────────────────────────── */}
       {typeof document !== 'undefined' && createPortal(
