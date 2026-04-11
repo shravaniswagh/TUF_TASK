@@ -27,7 +27,7 @@ export interface PinData {
   activeTaskId?: string;
   isPaused?: boolean;
   totalSeconds?: number;
-  startTime?: number; // timestamp when stopwatch was last started
+  startTime?: number | null; // timestamp when stopwatch was last started
   itemColor?: string;
   syncCalendarEvents?: boolean;
 }

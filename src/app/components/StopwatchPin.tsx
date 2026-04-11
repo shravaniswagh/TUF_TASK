@@ -147,7 +147,7 @@ export function StopwatchPin({
       onUpdate(pin.id, { 
         isPaused: true, 
         totalSeconds: newTotal,
-        startTime: undefined 
+        startTime: null 
       });
       
       // Log the remaining seconds to analytics
@@ -165,7 +165,7 @@ export function StopwatchPin({
   };
 
   const handleReset = () => {
-    onUpdate(pin.id, { totalSeconds: 0, startTime: undefined, isPaused: true });
+    onUpdate(pin.id, { totalSeconds: 0, startTime: null, isPaused: true });
     setLocalSeconds(0);
   };
 
@@ -179,7 +179,7 @@ export function StopwatchPin({
       onFocusIncrement?.(activeTaskId, sessionSeconds);
     }
 
-    onUpdate(pin.id, { totalSeconds: 0, isPaused: true, startTime: undefined });
+    onUpdate(pin.id, { totalSeconds: 0, isPaused: true, startTime: null });
     setLocalSeconds(0);
   };
 
