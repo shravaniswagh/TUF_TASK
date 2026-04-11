@@ -490,21 +490,24 @@ export function PinBoard({ boardId }: { boardId: string }) {
       </AnimatePresence>
 
       {/* ── Universal Pin Inspector PORTAL ───────────────────────── */}
-      <AnimatePresence>
-        {inspectorPinId && typeof document !== 'undefined' && createPortal(
-          <PinInspector
-            pin={pins.find(p => p.id === inspectorPinId) || null}
-            onUpdate={updatePin}
-            onDelete={(id) => {
-              deletePin(id);
-              setInspectorPinId(null);
-            }}
-            onClose={() => setInspectorPinId(null)}
-            isDark={isDark}
-          />,
+        {typeof document !== 'undefined' && createPortal(
+          <AnimatePresence mode="wait">
+            {inspectorPinId && (
+              <PinInspector
+                key={inspectorPinId}
+                pin={pins.find(p => p.id === inspectorPinId) || null}
+                onUpdate={updatePin}
+                onDelete={(id) => {
+                  deletePin(id);
+                  setInspectorPinId(null);
+                }}
+                onClose={() => setInspectorPinId(null)}
+                isDark={isDark}
+              />
+            )}
+          </AnimatePresence>,
           document.body
         )}
-      </AnimatePresence>
 
       {/* ── Actions Menu PORTAL ────────────────────────────────────── */}
       {typeof document !== 'undefined' && createPortal(

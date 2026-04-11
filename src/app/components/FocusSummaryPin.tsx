@@ -93,18 +93,20 @@ export function FocusSummaryPin({
 
         {/* Header */}
         <div
-          onMouseDown={(e) => {
-            if (isLocked) return;
-            e.preventDefault();
-            e.stopPropagation();
-            onDragStart(pin.id, e);
-          }}
-          className="flex items-center justify-between px-5 pt-5 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+          className="flex items-center justify-between px-5 pt-5 pb-2 shrink-0"
           style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
         >
-          <div className="flex items-center gap-2">
+          <div 
+            onMouseDown={(e) => {
+              if (isLocked) return;
+              e.preventDefault();
+              e.stopPropagation();
+              onDragStart(pin.id, e);
+            }}
+            className="flex items-center gap-2 cursor-grab active:cursor-grabbing grow"
+          >
             <GripVertical className="w-4 h-4 text-slate-400" />
-            <span className={`text-[10px] font-black uppercase tracking-widest ${textColorClass}`}>Daily Focus</span>
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-900'}`}>Focus Summary</span>
           </div>
           <div className="flex items-center gap-1">
             <AnimatePresence>

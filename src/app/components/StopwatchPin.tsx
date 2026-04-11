@@ -162,15 +162,17 @@ export function StopwatchPin({
           <div className={`w-full h-full flex flex-col overflow-hidden ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}>
             {!isFullscreen && (
               <div
-                onMouseDown={(e) => {
-                  if (isLocked) return;
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onDragStart(pin.id, e);
-                }}
-                className="flex items-center justify-between px-5 pt-5 pb-0 cursor-grab active:cursor-grabbing shrink-0"
+                className="flex items-center justify-between px-5 pt-5 pb-0 shrink-0"
               >
-                <div className="flex items-center gap-2">
+                <div 
+                  onMouseDown={(e) => {
+                    if (isLocked) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onDragStart(pin.id, e);
+                  }}
+                  className="flex items-center gap-2 cursor-grab active:cursor-grabbing grow"
+                >
                   <GripVertical className="w-4 h-4 text-slate-400" />
                   <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-900'}`}>Stopwatch</span>
                 </div>

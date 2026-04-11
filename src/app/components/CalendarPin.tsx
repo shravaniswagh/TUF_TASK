@@ -125,20 +125,21 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
       >
         <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
         {/* Drag Handle Header */}
-        <div
-          onMouseDown={(e) => {
-            if (isLocked) return;
-            e.preventDefault();
-            e.stopPropagation();
-            onDragStart(pin.id, e);
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          className="flex items-center justify-between px-3 py-2 cursor-grab active:cursor-grabbing shrink-0 border-b border-black/5"
-          style={{ backgroundColor: 'rgba(0,0,0,0.03)' }}
-        >
-          <div className="flex items-center gap-2">
-            <GripVertical className="w-4 h-4 text-slate-400" />
+          <div
+            className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 border-b border-black/5"
+          >
+          <div 
+            onMouseDown={(e) => {
+              if (isLocked) return;
+              e.preventDefault();
+              e.stopPropagation();
+              onDragStart(pin.id, e);
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
+          >
+            <GripVertical className={`w-3.5 h-3.5 ${textColorClass}`} />
             <span className={`text-[10px] font-black uppercase tracking-widest ${textColorClass}`}>Calendar</span>
           </div>
           
