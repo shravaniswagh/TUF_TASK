@@ -104,14 +104,14 @@ export function WeeklyAnalysisPin({
       }}
     >
       <motion.div
-        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-all duration-300 ${isSelected ? 'shadow-2xl scale-[1.01]' : ''}`}
+        className={`w-full h-full flex flex-col rounded-xl transition-all duration-300 ${isSelected ? 'shadow-2xl scale-[1.01]' : ''}`}
         onClick={onSelect}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
           backgroundColor: bgColor,
           boxShadow: isSelected ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 12px rgba(0,0,0,0.07)',
-          border: isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)',
+          border: '1px solid rgba(0,0,0,0.05)',
         }}
       >
         {/* Pin Head */}
@@ -125,6 +125,9 @@ export function WeeklyAnalysisPin({
             style={{ backgroundColor: pinHeadColor, opacity: 0.6 }}
           />
         </div>
+
+        {/* Content Wrapper to fix clipping */}
+        <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
 
         {/* Header */}
         <div
@@ -238,7 +241,8 @@ export function WeeklyAnalysisPin({
             <span className={`text-sm font-black ${textColorClass}`}>{totalHours} Hours</span>
           </div>
         </div>
-      </motion.div>
+      </div>
+    </motion.div>
     </Resizable>
   );
 }

@@ -108,7 +108,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-all duration-300 ${isSelected ? 'shadow-2xl' : 'shadow-sm'} border border-black/5`}
+        className={`w-full h-full flex flex-col rounded-xl transition-all duration-300 ${isSelected ? 'shadow-2xl' : 'shadow-sm'} border border-black/5`}
         onClick={(e) => {
           e.stopPropagation();
           onSelect();
@@ -119,9 +119,10 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
           boxShadow: isSelected
             ? '0 24px 48px rgba(0,0,0,0.2), 0 12px 24px rgba(0,0,0,0.15)'
             : (isDragging ? '0 24px 48px rgba(0,0,0,0.2)' : '0 4px 20px rgba(0,0,0,0.12)'),
-          border: isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.08)',
+          border: '1px solid rgba(0,0,0,0.08)',
         }}
       >
+        <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
         {/* Drag Handle Header */}
         <div
           onMouseDown={(e) => {
@@ -191,7 +192,8 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
             isDark={isDarkNow}
           />
         </div>
-      </motion.div>
+      </div>
+    </motion.div>
     </Resizable>
   );
 }

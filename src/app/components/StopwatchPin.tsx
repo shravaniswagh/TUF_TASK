@@ -137,25 +137,26 @@ export function StopwatchPin({
         className="w-full h-full"
       >
         <motion.div
-          className={`w-full h-full flex flex-col relative transition-all duration-500 overflow-hidden ${isSelected ? 'shadow-2xl' : ''} ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}
+          className={`w-full h-full flex flex-col relative transition-all duration-500 ${isSelected ? 'shadow-2xl' : ''} ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}
           onClick={onSelect}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => { setIsHovered(false); setShowTaskSelector(false); }}
           style={{
             backgroundColor: bgColor,
             boxShadow: isFullscreen ? 'none' : (isSelected ? '0 32px 64px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.07)'),
-            border: isFullscreen ? 'none' : (isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)'),
+            border: '1px solid rgba(0,0,0,0.05)',
           }}
         >
           {!isFullscreen && (
-            <>
-              {/* Pin Head */}
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-                <div className="w-5 h-5 rounded-full shadow-md" style={{ backgroundColor: pinHeadColor }} />
-                <div className="w-1.5 h-2 rounded-b-sm mx-auto" style={{ backgroundColor: pinHeadColor, opacity: 0.6 }} />
-              </div>
+            <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+              <div className="w-5 h-5 rounded-full shadow-md" style={{ backgroundColor: pinHeadColor }} />
+              <div className="w-1.5 h-2 rounded-b-sm mx-auto" style={{ backgroundColor: pinHeadColor, opacity: 0.6 }} />
+            </div>
+          )}
 
-              {/* Header */}
+          {/* Internal Content Wrapper to fix clipping */}
+          <div className={`w-full h-full flex flex-col overflow-hidden ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}>
+            {!isFullscreen && (
               <div
                 onMouseDown={(e) => {
                   if (isLocked) return;
@@ -199,112 +200,112 @@ export function StopwatchPin({
                    )}
                 </div>
               </div>
-            </>
-          )}
-
-          {/* Main Display Content - Matching Clock Layout */}
-          <div className="flex-1 flex flex-col items-center justify-center relative -mt-2">
-            {isFullscreen && (
-               <button 
-                  onClick={() => onToggleFullscreen?.(false)}
-                  className="absolute top-10 right-10 w-12 h-12 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/10 backdrop-blur-xl z-[10001] group"
-                >
-                  <Minimize2 className="w-5 h-5 text-white opacity-40 group-hover:opacity-100 transition-opacity" />
-               </button>
             )}
 
-            <div 
-               className={`${timeFontSize} font-black tracking-tighter tabular-nums`}
-               style={{ color: clockTextColor, fontFamily: customFont }}
-            >
-              {formatTime(localSeconds)}
-            </div>
+            {/* Main Display Content - Matching Clock Layout */}
+            <div className="flex-1 flex flex-col items-center justify-center relative -mt-2">
+              {isFullscreen && (
+                 <button 
+                    onClick={() => onToggleFullscreen?.(false)}
+                    className="absolute top-10 right-10 w-12 h-12 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/10 backdrop-blur-xl z-[10001] group"
+                  >
+                    <Minimize2 className="w-5 h-5 text-white opacity-40 group-hover:opacity-100 transition-opacity" />
+                 </button>
+              )}
 
-            {/* Controls - Replacing the Date area of clock */}
-            <div className={`flex items-center gap-6 mt-4 opacity-50 hover:opacity-100 transition-opacity z-10`}>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleReset(); }}
-                className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
-                style={{ color: clockTextColor }}
-                title="Reset"
+              <div 
+                 className={`${timeFontSize} font-black tracking-tighter tabular-nums`}
+                 style={{ color: clockTextColor, fontFamily: customFont }}
               >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
-                   <RotateCcw className={isFullscreen ? "w-8 h-8" : "w-5 h-5"} />
-                </div>
-              </button>
+                {formatTime(localSeconds)}
+              </div>
 
-              <button
-                onClick={(e) => { e.stopPropagation(); handleToggle(); }}
-                className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
-                style={{ color: clockTextColor }}
-                title={pin.isPaused ? "Play" : "Pause"}
-              >
-                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
-                   {pin.isPaused ? (
-                     <Play className={isFullscreen ? "w-10 h-10 ml-1.5" : "w-6 h-6 ml-1"} fill="currentColor" />
-                   ) : (
-                     <Pause className={isFullscreen ? "w-10 h-10" : "w-6 h-6"} fill="currentColor" />
-                   )}
-                </div>
-              </button>
-
-              <div className="relative">
+              {/* Controls - Replacing the Date area of clock */}
+              <div className={`flex items-center gap-6 mt-4 opacity-50 hover:opacity-100 transition-opacity z-10`}>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setShowTaskSelector(!showTaskSelector); }}
+                  onClick={(e) => { e.stopPropagation(); handleReset(); }}
                   className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
                   style={{ color: clockTextColor }}
-                  title="Select Task"
+                  title="Reset"
                 >
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
-                    <ListTodo className={isFullscreen ? "w-8 h-8" : "w-5 h-5"} />
+                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
+                      <RotateCcw className={isFullscreen ? "w-8 h-8" : "w-5 h-5"} />
+                   </div>
+                </button>
+
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleToggle(); }}
+                  className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
+                  style={{ color: clockTextColor }}
+                  title={pin.isPaused ? "Play" : "Pause"}
+                >
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
+                     {pin.isPaused ? (
+                       <Play className={isFullscreen ? "w-10 h-10 ml-1.5" : "w-6 h-6 ml-1"} fill="currentColor" />
+                     ) : (
+                       <Pause className={isFullscreen ? "w-10 h-10" : "w-6 h-6"} fill="currentColor" />
+                     )}
                   </div>
                 </button>
 
-                <AnimatePresence>
-                  {showTaskSelector && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full mb-3 right-0 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-black/5 p-3 max-h-64 overflow-y-auto custom-scrollbar z-[100]"
-                    >
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 px-2">Select Focus Task</p>
-                      <div className="space-y-1">
-                        {availableTasks.length === 0 ? (
-                           <div className="px-3 py-4 text-center text-xs text-slate-400 italic">No active tasks found.</div>
-                        ) : availableTasks.map(task => (
-                          <button
-                            key={task.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onToggleFocus?.(task.id);
-                              setShowTaskSelector(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTaskId === task.id ? 'bg-indigo-500 text-white shadow-lg' : 'hover:bg-black/5 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
-                          >
-                            <div className="w-4 h-4 flex-shrink-0" style={{ color: activeTaskId === task.id ? 'white' : task.parentColor }}>
-                               {task.completed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
-                            </div>
-                            <span className="text-sm font-bold truncate text-left">{task.text}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
+                <div className="relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowTaskSelector(!showTaskSelector); }}
+                    className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
+                    style={{ color: clockTextColor }}
+                    title="Select Task"
+                  >
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
+                      <ListTodo className={isFullscreen ? "w-8 h-8" : "w-5 h-5"} />
+                    </div>
+                  </button>
 
-            {isFullscreen && activeTaskName && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute bottom-20 text-center"
-              >
-                <p className="text-white/30 uppercase font-black tracking-[0.4em] text-xs mb-2">Focusing On</p>
-                <h2 className="text-white text-3xl font-black tracking-tight">{activeTaskName}</h2>
-              </motion.div>
-            )}
+                  <AnimatePresence>
+                    {showTaskSelector && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-full mb-3 right-0 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-black/5 p-3 max-h-64 overflow-y-auto custom-scrollbar z-[100]"
+                      >
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 px-2">Select Focus Task</p>
+                        <div className="space-y-1">
+                          {availableTasks.length === 0 ? (
+                             <div className="px-3 py-4 text-center text-xs text-slate-400 italic">No active tasks found.</div>
+                          ) : availableTasks.map(task => (
+                            <button
+                              key={task.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFocus?.(task.id);
+                                setShowTaskSelector(false);
+                              }}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTaskId === task.id ? 'bg-indigo-500 text-white shadow-lg' : 'hover:bg-black/5 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                            >
+                              <div className="w-4 h-4 flex-shrink-0" style={{ color: activeTaskId === task.id ? 'white' : task.parentColor }}>
+                                 {task.completed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                              </div>
+                              <span className="text-sm font-bold truncate text-left">{task.text}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {isFullscreen && activeTaskName && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute bottom-20 text-center"
+                >
+                  <p className="text-white/30 uppercase font-black tracking-[0.4em] text-xs mb-2">Focusing On</p>
+                  <h2 className="text-white text-3xl font-black tracking-tight">{activeTaskName}</h2>
+                </motion.div>
+              )}
+            </div>
           </div>
         </motion.div>
       </Resizable>

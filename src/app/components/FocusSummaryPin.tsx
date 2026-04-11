@@ -62,14 +62,14 @@ export function FocusSummaryPin({
       }}
     >
       <motion.div
-        className={`w-full h-full flex flex-col rounded-xl border border-black/5 overflow-hidden transition-all duration-300 ${isSelected ? 'shadow-2xl' : ''} backdrop-blur-md`}
+        className={`w-full h-full flex flex-col rounded-xl border border-black/5 transition-all duration-300 ${isSelected ? 'shadow-2xl' : ''} backdrop-blur-md`}
         onClick={onSelect}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
           backgroundColor: bgColor,
           boxShadow: isSelected ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 12px rgba(0,0,0,0.07)',
-          border: isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)',
+          border: '1px solid rgba(0,0,0,0.05)',
         }}
       >
         {/* Pin Head */}
@@ -83,6 +83,9 @@ export function FocusSummaryPin({
             style={{ backgroundColor: pinHeadColor, opacity: 0.6 }}
           />
         </div>
+
+        {/* Content Wrapper to fix clipping */}
+        <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
 
         {/* Header */}
         <div
@@ -146,6 +149,7 @@ export function FocusSummaryPin({
           </div>
         </div>
 
+        </div>
         <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
       </motion.div>
     </Resizable>

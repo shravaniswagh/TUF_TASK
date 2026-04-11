@@ -317,7 +317,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-        className={`w-full h-full flex flex-col relative transition-all duration-500 overflow-hidden ${isSelected ? 'shadow-2xl' : ''} rounded-xl`}
+        className={`w-full h-full flex flex-col relative transition-all duration-500 ${isSelected ? 'shadow-2xl' : ''} rounded-xl`}
         onClick={(e) => {
           e.stopPropagation();
           onSelect();
@@ -330,7 +330,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
           boxShadow: isSelected 
             ? '0 20px 40px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.1)'
             : (isDragging ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 12px rgba(0,0,0,0.07)'),
-          border: isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)',
+          border: '1px solid rgba(0,0,0,0.05)',
           // @ts-ignore
           '--scrollbar-color': scrollColor,
           // @ts-ignore
@@ -349,17 +349,19 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
           />
         </div>
 
-        {/* Pin Header */}
-        <div
-          onMouseDown={(e) => {
-            if (isLocked) return;
-            e.preventDefault();
-            e.stopPropagation();
-            onDragStart(pin.id, e);
-          }}
-          className="flex items-center justify-between px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0"
-          style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
-        >
+        {/* Internal Content Wrapper to fix clipping */}
+        <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
+          {/* Pin Header */}
+          <div
+            onMouseDown={(e) => {
+              if (isLocked) return;
+              e.preventDefault();
+              e.stopPropagation();
+              onDragStart(pin.id, e);
+            }}
+            className="flex items-center justify-between px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+            style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+          >
           <div className="flex items-center gap-1.5">
             <GripVertical className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-400' : 'text-slate-400'}`} />
               <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>
@@ -692,7 +694,8 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
             </div>
           )}
         </div>
-      </motion.div>
-    </Resizable>
+      </div>
+    </motion.div>
+  </Resizable>
   );
 }
