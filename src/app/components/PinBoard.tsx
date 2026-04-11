@@ -172,6 +172,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
   // Track the most recent local user action to shield against stale cloud snapshots
   const localLastUpdatedRef = useRef<number>(Date.now());
 
+  // Generate a unique client session ID to perfectly ignore our own Firestore server acknowledgments
+  const clientIdRef = useRef(Math.random().toString(36).substring(2, 10));
+
   // The poisonous useEffect that redundantly overwrote masterStateRef.current has been removed.
   // We rely fully on synchronous mutation of the ref during state changes (setPins, setBoardColor, etc.)
   // This prevents React concurrent rendering closures from replacing fresh ref state with stale state.
@@ -192,6 +195,14 @@ export function PinBoard({ boardId }: { boardId: string }) {
         // This prevents "rubber-banding" during drags or rapid updates.
         if (data.lastUpdatedMillis && data.lastUpdatedMillis < localLastUpdatedRef.current && !isInitialLoad) {
           console.log('[SYNC] 🛡️ Shield active: Ignoring stale cloud state.');
+          return;
+        }
+
+        // DEFINITIVE CLIENT GUARD: If this data was literally saved by this exact browser tab,
+        // we already have the optimistic state locally. Applying it again causes visual resets 
+        // if local data mutated slightly while the save was in transit.
+        if (data.lastUpdaterId === clientIdRef.current && !isInitialLoad) {
+          console.log('[SYNC] 🛡️ Ignoring our own save acknowledgment to prevent resets.');
           return;
         }
 
@@ -247,6 +258,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
       isLocked: il,
       lastUpdated: new Date().toISOString(),
       lastUpdatedMillis: Date.now(),
+      lastUpdaterId: clientIdRef.current,
       focusHistory: fh,
       activeFocusTaskId: af,
     }, { merge: true })
