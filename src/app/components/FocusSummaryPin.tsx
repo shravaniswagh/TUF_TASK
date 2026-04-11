@@ -9,7 +9,7 @@ interface FocusSummaryPinProps {
   pin: PinData;
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
-  onDragStart: (id: string, e: React.MouseEvent) => void;
+  onDragStart: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
   onOpenInspector: (id: string) => void;
   isDragging?: boolean;
   isDark: boolean;
@@ -109,7 +109,12 @@ export function FocusSummaryPin({
               e.stopPropagation();
               onDragStart(pin.id, e);
             }}
-            className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
+            onTouchStart={(e) => {
+              if (isLocked) return;
+              e.stopPropagation();
+              onDragStart(pin.id, e);
+            }}
+            className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow touch-none"
           >
             <GripVertical className="w-3.5 h-3.5 text-slate-400" />
             <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>Focus Summary</span>

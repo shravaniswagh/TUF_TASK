@@ -10,7 +10,7 @@ interface StopwatchPinProps {
   pin: PinData;
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
-  onDragStart: (id: string, e: React.MouseEvent) => void;
+  onDragStart: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
@@ -256,7 +256,12 @@ export function StopwatchPin({
                       e.stopPropagation();
                       onDragStart(pin.id, e);
                     }}
-                    className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
+                    onTouchStart={(e) => {
+                      if (isLocked) return;
+                      e.stopPropagation();
+                      onDragStart(pin.id, e);
+                    }}
+                    className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow touch-none"
                   >
                     <GripVertical className="w-3.5 h-3.5 text-slate-400" />
                     <span className={`text-xs capitalize tracking-wide font-medium ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`}>Stopwatch</span>
