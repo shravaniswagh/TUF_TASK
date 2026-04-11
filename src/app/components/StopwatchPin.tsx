@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Resizable } from 're-resizable';
 import { X, GripVertical, Play, Pause, RotateCcw, Maximize2, Minimize2, Settings2, ListTodo, Circle, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -58,6 +59,20 @@ export function StopwatchPin({
   const [isHovered, setIsHovered] = useState(false);
   const [showTaskSelector, setShowTaskSelector] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(pin.totalSeconds || 0);
+  const [selectorPos, setSelectorPos] = useState({ top: 0, left: 0, width: 256 });
+  const selectorBtnRef = useRef<HTMLButtonElement>(null);
+
+  // Update position when selector opens
+  useEffect(() => {
+    if (showTaskSelector && selectorBtnRef.current) {
+      const rect = selectorBtnRef.current.getBoundingClientRect();
+      setSelectorPos({
+        top: rect.top - 8, // Position slightly above the button
+        left: rect.right - 256, // Align right edge
+        width: 256
+      });
+    }
+  }, [showTaskSelector]);
   
   // Keep local seconds in sync with external updates (like reset)
   useEffect(() => {
@@ -134,7 +149,7 @@ export function StopwatchPin({
           onUpdate(pin.id, { width: pin.width + d.width, height: pin.height + d.height });
         }}
         minWidth={isFullscreen ? 0 : 220}
-        minHeight={isFullscreen ? 0 : 150}
+        minHeight={isFullscreen ? 0 : 200}
         className="w-full h-full"
       >
         <motion.div
@@ -256,6 +271,7 @@ export function StopwatchPin({
 
                 <div className="relative">
                   <button
+                    ref={selectorBtnRef}
                     onClick={(e) => { e.stopPropagation(); setShowTaskSelector(!showTaskSelector); }}
                     className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
                     style={{ color: clockTextColor }}
@@ -266,38 +282,56 @@ export function StopwatchPin({
                     </div>
                   </button>
 
-                  <AnimatePresence>
-                    {showTaskSelector && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-full mb-3 right-0 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-black/5 p-3 max-h-64 overflow-y-auto custom-scrollbar z-[100]"
-                      >
-                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 px-2">Select Focus Task</p>
-                        <div className="space-y-1">
-                          {availableTasks.length === 0 ? (
-                             <div className="px-3 py-4 text-center text-xs text-slate-400 italic">No active tasks found.</div>
-                          ) : availableTasks.map(task => (
-                            <button
-                              key={task.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onToggleFocus?.(task.id);
-                                setShowTaskSelector(false);
-                              }}
-                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTaskId === task.id ? 'bg-indigo-500 text-white shadow-lg' : 'hover:bg-black/5 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
-                            >
-                              <div className="w-4 h-4 flex-shrink-0" style={{ color: activeTaskId === task.id ? 'white' : task.parentColor }}>
-                                 {task.completed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
-                              </div>
-                              <span className="text-sm font-bold truncate text-left">{task.text}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {typeof document !== 'undefined' && createPortal(
+                    <AnimatePresence>
+                      {showTaskSelector && (
+                        <>
+                          {/* Backdrop to catch clicks */}
+                          <div 
+                            className="fixed inset-0 z-[1000000]" 
+                            onClick={(e) => { e.stopPropagation(); setShowTaskSelector(false); }}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            style={{ 
+                              position: 'fixed',
+                              top: selectorPos.top,
+                              left: selectorPos.left,
+                              width: selectorPos.width,
+                              transform: 'translateY(-100%)',
+                              zIndex: 1000001 
+                            }}
+                            className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-black/5 p-3 max-h-64 overflow-y-auto custom-scrollbar"
+                          >
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 px-2">Select Focus Task</p>
+                            <div className="space-y-1">
+                              {availableTasks.length === 0 ? (
+                                <div className="px-3 py-4 text-center text-xs text-slate-400 italic">No active tasks found.</div>
+                              ) : availableTasks.map(task => (
+                                <button
+                                  key={task.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleFocus?.(task.id);
+                                    setShowTaskSelector(false);
+                                  }}
+                                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all ${activeTaskId === task.id ? 'bg-indigo-500 text-white shadow-lg' : 'hover:bg-black/5 dark:hover:bg-white/5 text-slate-600 dark:text-slate-300'}`}
+                                >
+                                  <div className="w-4 h-4 flex-shrink-0" style={{ color: activeTaskId === task.id ? 'white' : task.parentColor }}>
+                                    {task.completed ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                                  </div>
+                                  <span className="text-sm font-bold truncate text-left">{task.text}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>,
+                    document.body
+                  )}
                 </div>
               </div>
 

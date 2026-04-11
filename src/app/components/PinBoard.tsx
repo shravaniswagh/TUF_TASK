@@ -256,7 +256,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const addPin = (type: PinData['type']) => {
     const maxZ = pins.reduce((m, p) => Math.max(m, p.zIndex ?? 0), 0);
     const width = type === 'calendar' ? 480 : (type === 'stopwatch' ? 240 : 300);
-    const height = type === 'calendar' ? 600 : (type === 'stopwatch' ? 150 : 200);
+    const height = type === 'calendar' ? 600 : (type === 'stopwatch' ? 220 : 200);
 
     const { x, y } = findSafePosition(width, height);
     
