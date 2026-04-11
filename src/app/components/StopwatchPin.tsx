@@ -11,6 +11,8 @@ interface StopwatchPinProps {
   onDelete: (id: string) => void;
   onDragStart: (id: string, e: React.MouseEvent) => void;
   onOpenInspector: (id: string) => void;
+  onToggleFullscreen?: (isFullscreen: boolean) => void;
+  isFullscreen?: boolean;
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
@@ -37,117 +39,69 @@ function getContrastColor(hexColor?: string) {
   return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
 }
 
-const FlipCard = ({ current, next, isFullscreen, itemColor, textColor, fontFamily }: { 
-  current: string; 
-  next: string; 
+/**
+ * Liquid Sliding Digit Component
+ */
+const LiquidDigit = ({ value, isFullscreen, textColor, fontFamily }: { 
+  value: number; 
   isFullscreen?: boolean;
-  itemColor: string;
   textColor: string;
   fontFamily: string;
 }) => {
-  const [isFlipping, setIsFlipping] = useState(false);
-  const [displayNext, setDisplayNext] = useState(next);
-  const [displayCurrent, setDisplayCurrent] = useState(current);
-
-  useEffect(() => {
-    if (next !== displayNext) {
-      setIsFlipping(true);
-      const timer = setTimeout(() => {
-        setIsFlipping(false);
-        setDisplayCurrent(next);
-        setDisplayNext(next);
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [next, displayNext]);
-
-  const sizeClass = isFullscreen ? 'w-48 h-64 text-8xl' : 'w-20 h-28 text-5xl';
-  const radiusClass = isFullscreen ? 'rounded-[32px]' : 'rounded-xl';
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const size = isFullscreen ? 160 : 64;
+  const height = isFullscreen ? 180 : 80;
 
   return (
-    <div className={`relative ${sizeClass} perspective-1000`} style={{ fontFamily }}>
-      {/* Static Top (Next Value) */}
-      <div className={`absolute inset-0 flex items-center justify-center font-black ${radiusClass} overflow-hidden h-1/2 border-b border-black/10`} 
-           style={{ backgroundColor: itemColor, color: textColor }}>
-        <span className="translate-y-1/2">{displayNext}</span>
-      </div>
-
-      {/* Static Bottom (Current Value) */}
-      <div className={`absolute inset-x-0 bottom-0 top-1/2 flex items-center justify-center font-black ${radiusClass} overflow-hidden`} 
-           style={{ backgroundColor: itemColor, color: textColor }}>
-        <span className="-translate-y-1/2">{displayCurrent}</span>
-      </div>
-
-      {/* Animated Flip Part */}
-      <AnimatePresence>
-        {isFlipping && (
-          <motion.div
-            key={displayCurrent}
-            initial={{ rotateX: 0 }}
-            animate={{ rotateX: -180 }}
-            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-            className="absolute inset-x-0 top-0 h-1/2 z-20 origin-bottom"
-            style={{ transformStyle: 'preserve-3d' }}
-          >
-            {/* Front of flipping card (Top half of current value) */}
-            <div className={`absolute inset-0 backface-hidden flex items-center justify-center font-black ${radiusClass} overflow-hidden border-b border-black/5`}
-                 style={{ backgroundColor: itemColor, color: textColor }}>
-              <span className="translate-y-1/2">{displayCurrent}</span>
-            </div>
-            
-            {/* Back of flipping card (Bottom half of next value) */}
-            <div className={`absolute inset-0 backface-hidden flex items-center justify-center font-black ${radiusClass} overflow-hidden`}
-                 style={{ backgroundColor: itemColor, color: textColor, transform: 'rotateX(180deg)' }}>
-              <span className="-translate-y-1/2">{displayNext}</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Visual Slit */}
-      <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-black/20 z-10" />
+    <div 
+      className="relative overflow-hidden flex items-center justify-center font-black tabular-nums tracking-tighter"
+      style={{ 
+        width: size, 
+        height: height,
+        fontSize: size,
+        fontFamily 
+      }}
+    >
+      <motion.div
+        animate={{ y: -value * height }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
+        className="absolute top-0 flex flex-col items-center"
+      >
+        {digits.map(d => (
+          <div key={d} style={{ height, color: textColor }} className="flex items-center justify-center">
+            {d}
+          </div>
+        ))}
+      </motion.div>
     </div>
   );
 };
 
-const FlipUnit = ({ value, label, isFullscreen, itemColor, textColor, fontFamily }: { 
+const DigitalUnit = ({ value, label, isFullscreen, textColor, fontFamily }: { 
   value: number; 
   label: string; 
   isFullscreen?: boolean;
-  itemColor: string;
   textColor: string;
   fontFamily: string;
 }) => {
-  const valStr = value.toString().padStart(2, '0');
-  const [prevVal, setPrevVal] = useState(valStr);
-
-  useEffect(() => {
-    if (valStr !== prevVal) {
-      const timer = setTimeout(() => setPrevVal(valStr), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [valStr, prevVal]);
+  const tens = Math.floor(value / 10);
+  const ones = value % 10;
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <FlipCard 
-        current={prevVal} 
-        next={valStr} 
-        isFullscreen={isFullscreen} 
-        itemColor={itemColor} 
-        textColor={textColor}
-        fontFamily={fontFamily}
-      />
-      <span className={`font-black uppercase tracking-[0.2em] opacity-40 ${isFullscreen ? 'text-xs' : 'text-[10px]'}`} 
+    <div className="flex flex-col items-center gap-1 sm:gap-4">
+      <div className="flex">
+        <LiquidDigit value={tens} isFullscreen={isFullscreen} textColor={textColor} fontFamily={fontFamily} />
+        <LiquidDigit value={ones} isFullscreen={isFullscreen} textColor={textColor} fontFamily={fontFamily} />
+      </div>
+      <span className={`font-black uppercase tracking-[0.3em] opacity-30 ${isFullscreen ? 'text-lg mt-4' : 'text-[9px]'}`} 
             style={{ color: textColor }}>{label}</span>
     </div>
   );
 };
 
 export function StopwatchPin({ 
-  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement 
+  pin, onUpdate, onDelete, onDragStart, onOpenInspector, onToggleFullscreen, isFullscreen = false, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement 
 }: StopwatchPinProps) {
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [seconds, setSeconds] = useState(pin.totalSeconds || 0);
   const [isActive, setIsActive] = useState(!pin.isPaused);
@@ -186,152 +140,178 @@ export function StopwatchPin({
 
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
   const defaultBg = isDark ? '#1a1a1a' : '#f8fafc';
-  const bgColor = pin.color || defaultBg;
+  const bgColor = isFullscreen ? '#0a0a0a' : (pin.color || defaultBg);
   const textColorClass = getContrastColor(bgColor);
   
-  const clockFaceColor = pin.itemColor || '#1a1a1a';
-  const clockTextColor = pin.textColor || '#e5e5e5';
-  const customFont = pin.fontFamily || 'system-ui';
+  const clockTextColor = pin.textColor || (textColorClass.includes('slate-50') ? '#ffffff' : '#1e293b');
+  const customFont = pin.fontFamily || 'Inter, system-ui, sans-serif';
+
+  // Progress Ring Logic
+  const progress = (seconds % 3600) / 3600;
+  const radius = isFullscreen ? 400 : 160;
+  const circumference = 2 * Math.PI * radius;
 
   return (
-    <Resizable
-      size={{ width: pin.width, height: pin.height }}
-      onResizeStop={(_e, _dir, _ref, d) => {
-        if (isLocked) return;
-        onUpdate(pin.id, { width: pin.width + d.width, height: pin.height + d.height });
-      }}
-      minWidth={320}
-      minHeight={240}
-      className={`${isFullscreen ? '!fixed !inset-0 !w-full !h-full !z-[10000] !m-0 !p-0' : ''}`}
+    <div
       style={{
-        position: 'absolute',
+        position: isFullscreen ? 'fixed' : 'absolute',
+        inset: isFullscreen ? 0 : 'auto',
         left: isFullscreen ? 0 : pin.x,
         top: isFullscreen ? 0 : pin.y,
         zIndex: isFullscreen ? 10000 : (isDragging ? 9999 : (pin.zIndex ?? 1)),
+        width: isFullscreen ? '100vw' : pin.width,
+        height: isFullscreen ? '100vh' : pin.height,
       }}
+      className={`${isFullscreen ? 'bg-black' : ''}`}
     >
-      <motion.div
-        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''}`}
-        onClick={onSelect}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        style={{
-          backgroundColor: isFullscreen ? '#0a0a0a' : bgColor,
-          boxShadow: isFullscreen ? 'none' : (isSelected ? '0 32px 64px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.07)'),
-          border: isFullscreen ? 'none' : (isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)'),
+      <Resizable
+        size={{ width: isFullscreen ? '100%' : pin.width, height: isFullscreen ? '100%' : pin.height }}
+        enable={(!isFullscreen && !isLocked) ? undefined : false}
+        onResizeStop={(_e, _dir, _ref, d) => {
+          if (isLocked || isFullscreen) return;
+          onUpdate(pin.id, { width: pin.width + d.width, height: pin.height + d.height });
         }}
+        minWidth={320}
+        minHeight={240}
+        className="w-full h-full"
       >
-        {!isFullscreen && (
-          <>
-            {/* Pin Head */}
-            <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-              <div
-                className="w-5 h-5 rounded-full shadow-md"
-                style={{ backgroundColor: pinHeadColor }}
-              />
-              <div
-                className="w-1.5 h-2 rounded-b-sm mx-auto"
-                style={{ backgroundColor: pinHeadColor, opacity: 0.6 }}
-              />
-            </div>
-
-            {/* Header */}
-            <div
-              onMouseDown={(e) => {
-                if (isLocked) return;
-                e.preventDefault();
-                e.stopPropagation();
-                onDragStart(pin.id, e);
-              }}
-              className="flex items-center justify-between px-5 pt-5 pb-2 cursor-grab active:cursor-grabbing shrink-0"
-              style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+        <motion.div
+          className={`w-full h-full flex flex-col relative transition-all duration-500 overflow-hidden ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''} ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}
+          onClick={onSelect}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          style={{
+            backgroundColor: bgColor,
+            boxShadow: isFullscreen ? 'none' : (isSelected ? '0 32px 64px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.07)'),
+            border: isFullscreen ? 'none' : (isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)'),
+          }}
+        >
+          {isFullscreen ? (
+            /* Minimize Button - Top Right Immersive */
+            <button 
+              onClick={() => onToggleFullscreen?.(false)}
+              className="absolute top-10 right-10 w-12 h-12 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/10 backdrop-blur-xl z-[10001] group"
             >
-              <div className="flex items-center gap-2">
-                <GripVertical className="w-4 h-4 text-slate-400" />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${textColorClass}`}>Timer</span>
+              <Minimize2 className="w-5 h-5 text-white opacity-40 group-hover:opacity-100 transition-opacity" />
+            </button>
+          ) : (
+            <>
+              {/* Pin Head */}
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+                <div className="w-5 h-5 rounded-full shadow-md" style={{ backgroundColor: pinHeadColor }} />
+                <div className="w-1.5 h-2 rounded-b-sm mx-auto" style={{ backgroundColor: pinHeadColor, opacity: 0.6 }} />
               </div>
-              
-              <div className="flex items-center gap-1">
-                <AnimatePresence>
-                  {isHovered && !isLocked && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8, x: 10 }}
-                      animate={{ opacity: 1, scale: 1, x: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, x: 10 }}
-                      onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
-                      className={`w-7 h-7 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10`}
+
+              {/* Header */}
+              <div
+                onMouseDown={(e) => {
+                  if (isLocked) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onDragStart(pin.id, e);
+                }}
+                className="flex items-center justify-between px-5 pt-5 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+              >
+                <div className="flex items-center gap-2">
+                  <GripVertical className="w-4 h-4 text-slate-400" />
+                  <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-900'}`}>Stopwatch</span>
+                </div>
+                
+                <div className="flex items-center gap-1.5">
+                   <AnimatePresence>
+                      {isHovered && !isLocked && (
+                        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex gap-1.5">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onToggleFullscreen?.(true); }}
+                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-black/10 transition-all"
+                          >
+                            <Maximize2 className={`w-4 h-4 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`} />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
+                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-black/10 transition-all"
+                          >
+                            <Settings2 className={`w-4 h-4 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`} />
+                          </button>
+                        </motion.div>
+                      )}
+                   </AnimatePresence>
+                   {!isLocked && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/10 transition-colors"
                     >
-                      <Settings2 className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-600'}`} />
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-
-                {!isLocked && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
-                    className={`w-7 h-7 flex items-center justify-center rounded-xl hover:bg-black/10 transition-colors`}
-                  >
-                    <X className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
-                  </button>
-                )}
+                      <X className={`w-4 h-4 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-500'}`} />
+                    </button>
+                   )}
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {/* Display */}
-        <div className={`flex-1 flex flex-col items-center justify-center gap-12 ${isFullscreen ? 'bg-black p-12' : 'p-8'}`}>
-          <motion.div 
-            animate={isFullscreen ? { scale: [1, 1.03, 1] } : {}}
-            transition={isFullscreen ? { duration: 10, repeat: Infinity, ease: "easeInOut" } : {}}
-            className="flex items-center gap-6 md:gap-10"
-          >
-            <FlipUnit value={h} label="Hours" isFullscreen={isFullscreen} itemColor={clockFaceColor} textColor={clockTextColor} fontFamily={customFont} />
-            <FlipUnit value={m} label="Minutes" isFullscreen={isFullscreen} itemColor={clockFaceColor} textColor={clockTextColor} fontFamily={customFont} />
-            <FlipUnit value={s} label="Seconds" isFullscreen={isFullscreen} itemColor={clockFaceColor} textColor={clockTextColor} fontFamily={customFont} />
-          </motion.div>
-
-          <div className="flex flex-col items-center gap-8">
-            <div className="flex items-center gap-6">
-              <button 
-                onClick={handleToggle}
-                className={`w-16 h-16 rounded-[24px] flex items-center justify-center transition-all shadow-xl active:scale-95 ${isActive && !pin.isPaused ? 'bg-rose-500 hover:bg-rose-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
-              >
-                {pin.isPaused ? <Play className="w-7 h-7 text-white ml-1 fill-white" /> : <Pause className="w-7 h-7 text-white" />}
-              </button>
-              <button 
-                onClick={handleReset}
-                className={`w-14 h-14 rounded-[20px] flex items-center justify-center bg-white/10 dark:bg-white/5 border border-white/10 hover:bg-white/20 transition-all shadow-lg active:scale-95`}
-              >
-                <RotateCcw className={`w-6 h-6 ${isFullscreen ? 'text-white/60' : (textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-600')}`} />
-              </button>
+          {/* Main Display Content */}
+          <div className="flex-1 flex flex-col items-center justify-center relative p-6">
+            {/* Background Focus Ring */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 overflow-hidden">
+               <svg className={`transform -rotate-90 ${isFullscreen ? 'w-[120vh] h-[120vh]' : 'w-[200%] h-[200%]'}`} viewBox="0 0 1000 1000">
+                  <circle
+                    cx="500" cy="500" r={radius}
+                    fill="none"
+                    stroke={clockTextColor}
+                    strokeWidth={isFullscreen ? "1" : "2"}
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference * (1 - progress)}
+                    className="transition-all duration-1000 ease-linear"
+                  />
+               </svg>
             </div>
 
-            {activeTaskId && (
+            <div className="flex items-center gap-2 sm:gap-8 z-10">
+              <DigitalUnit value={h} label="Hr" isFullscreen={isFullscreen} textColor={clockTextColor} fontFamily={customFont} />
+              <div className={`font-black opacity-20 -mt-8 ${isFullscreen ? 'text-9xl' : 'text-5xl'}`} style={{ color: clockTextColor }}>:</div>
+              <DigitalUnit value={m} label="Min" isFullscreen={isFullscreen} textColor={clockTextColor} fontFamily={customFont} />
+              <div className={`font-black opacity-20 -mt-8 ${isFullscreen ? 'text-9xl' : 'text-5xl'}`} style={{ color: clockTextColor }}>:</div>
+              <DigitalUnit value={s} label="Sec" isFullscreen={isFullscreen} textColor={clockTextColor} fontFamily={customFont} />
+            </div>
+
+            {/* Distraction-Free Controls */}
+            <div className={`flex items-center gap-10 z-10 transition-all duration-500 ${isFullscreen ? 'mt-24' : 'mt-8'}`}>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleReset(); }}
+                className={`flex items-center justify-center rounded-full transition-all border border-white/5 shadow-lg active:scale-95 ${isFullscreen ? 'w-16 h-16 bg-white/5 hover:bg-white/10' : 'w-10 h-10 bg-black/5 hover:bg-black/10'}`}
+                style={{ color: clockTextColor }}
+              >
+                <RotateCcw className={isFullscreen ? "w-6 h-6" : "w-4 h-4"} />
+              </button>
+
+              <button
+                onClick={(e) => { e.stopPropagation(); handleToggle(); }}
+                className={`flex items-center justify-center rounded-full transition-all shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-white/10 active:scale-90 ${isFullscreen ? 'w-32 h-32 bg-white text-black hover:scale-105' : 'w-16 h-16 bg-indigo-500 text-white hover:bg-indigo-600'}`}
+                style={isFullscreen ? {} : { backgroundColor: pinHeadColor }}
+              >
+                {isActive && !pin.isPaused ? (
+                  <Pause className={isFullscreen ? "w-12 h-12" : "w-6 h-6"} fill="currentColor" />
+                ) : (
+                  <Play className={isFullscreen ? "w-12 h-12" : "w-6 h-6 ml-2"} fill="currentColor" />
+                )}
+              </button>
+
+              <div className={isFullscreen ? "w-16" : "w-10"} /> {/* Spacing logic */}
+            </div>
+
+            {isFullscreen && activeTaskName && (
               <motion.div 
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex items-center gap-3 px-6 py-2.5 rounded-full border shadow-xl animate-pulse ${isFullscreen ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-indigo-500/10 border-indigo-500/20'}`}
+                className="absolute bottom-20 text-center"
               >
-                <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.8)]" />
-                <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isFullscreen ? 'text-indigo-400' : 'text-indigo-600'}`}>
-                  {activeTaskName || 'Active Task'}
-                </span>
+                <p className="text-white/30 uppercase font-black tracking-[0.4em] text-xs mb-2">Currently Focusing On</p>
+                <h2 className="text-white text-3xl font-black">{activeTaskName}</h2>
               </motion.div>
             )}
           </div>
-        </div>
-
-        {/* Toggle FS Button */}
-        <div className="absolute bottom-8 right-8 z-10">
-          <button 
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-4 rounded-[20px] bg-white/10 backdrop-blur-xl border border-white/10 hover:bg-white/20 transition-all text-white/60 hover:text-white shadow-2xl"
-          >
-            {isFullscreen ? <Minimize2 className="w-7 h-7" /> : <Maximize2 className="w-7 h-7" />}
-          </button>
-        </div>
-      </motion.div>
-    </Resizable>
+        </motion.div>
+      </Resizable>
+    </div>
   );
 }

@@ -74,6 +74,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [dragging, setDragging] = useState<DragState | null>(null);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [inspectorPinId, setInspectorPinId] = useState<string | null>(null);
+  const [fullscreenPinId, setFullscreenPinId] = useState<string | null>(null);
   const [activeFocusTaskId, setActiveFocusTaskId] = useState<string | null>(null);
   const [focusHistory, setFocusHistory] = useState<Record<string, number>>({});
   const boardRef = useRef<HTMLDivElement>(null);
@@ -251,6 +252,10 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const deletePin = useCallback((id: string) =>
     setPins(prev => prev.filter(p => p.id !== id)), []);
 
+  const toggleFullscreen = useCallback((id: string, isFullscreen: boolean) => {
+    setFullscreenPinId(isFullscreen ? id : null);
+  }, []);
+
   const handleCopyBoardUrl = () => {
     navigator.clipboard.writeText(`${window.location.origin}/?board=${boardId}`);
     setCopied(true);
@@ -292,7 +297,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
     >
       {/* ── Minimalist Instructions ────────────────────────────────── */}
       <AnimatePresence>
-        {hasLoaded && pins.length === 0 && (
+        {!fullscreenPinId && hasLoaded && pins.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -310,96 +315,129 @@ export function PinBoard({ boardId }: { boardId: string }) {
       </AnimatePresence>
 
       {/* ── Pins Render ───────────────────────────────────────────── */}
-      {hasLoaded && pins.map(pin => {
-        if (pin.type === 'calendar') {
-          return (
-            <CalendarPin key={pin.id} pin={pin} boardId={boardId}
-              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
-              isLocked={isLocked}
-              isSelected={selectedPinId === pin.id}
-              onSelect={() => setSelectedPinId(pin.id)}
-              onOpenInspector={() => setInspectorPinId(pin.id)}
-              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
-          );
-        } else if (pin.type === 'stopwatch') {
-          return (
-            <StopwatchPin key={pin.id} pin={pin}
-              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
-              isLocked={isLocked}
-              isSelected={selectedPinId === pin.id}
-              onSelect={() => setSelectedPinId(pin.id)}
-              onOpenInspector={() => setInspectorPinId(pin.id)}
-              onToggleFocus={(tid) => setActiveFocusTaskId(tid)}
-              activeTaskId={activeFocusTaskId}
-              activeTaskName={pins.find(p => p.type === 'todo' || p.type === 'daily-tasks')?.content ? 
-                (() => {
-                  try {
-                    const todos = JSON.parse(pins.find(p => p.type === 'todo')?.content || '[]');
-                    const t = todos.find((t: any) => t.id === activeFocusTaskId);
-                    return t ? t.text : null;
-                  } catch(e) { return null; }
-                })() : null}
-              onFocusIncrement={() => {
-                const today = new Date().toISOString().split('T')[0];
-                setFocusHistory(prev => ({
-                  ...prev,
-                  [today]: (prev[today] || 0) + 1
-                }));
-              }}
-              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
-          );
-        } else if (pin.type === 'focus-summary') {
-          return (
-            <FocusSummaryPin key={pin.id} pin={pin}
-              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
-              isLocked={isLocked}
-              isSelected={selectedPinId === pin.id}
-              onSelect={() => setSelectedPinId(pin.id)}
-              onOpenInspector={() => setInspectorPinId(pin.id)}
-              dailyTotal={dailyTotal}
-              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
-          );
-        } else if (pin.type === 'weekly-analysis') {
-          return (
-            <WeeklyAnalysisPin key={pin.id} pin={pin}
-              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
-              isLocked={isLocked}
-              isSelected={selectedPinId === pin.id}
-              onSelect={() => setSelectedPinId(pin.id)}
-              onOpenInspector={() => setInspectorPinId(pin.id)}
-              weeklyData={weeklyData}
-              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
-          );
-        } else {
-          return (
-            <Pin key={pin.id} pin={pin} boardId={boardId}
-              onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
-              isLocked={isLocked}
-              isSelected={selectedPinId === pin.id}
-              onSelect={() => setSelectedPinId(pin.id)}
-              onOpenInspector={() => setInspectorPinId(pin.id)}
-              activeFocusTaskId={activeFocusTaskId}
-              onStartFocus={(tid) => {
-                if (activeFocusTaskId === tid) {
-                  // Pause if clicking the same task
+      <AnimatePresence>
+        {!fullscreenPinId && hasLoaded && pins.map(pin => {
+          if (pin.type === 'calendar') {
+             return (
+              <CalendarPin key={pin.id} pin={pin} boardId={boardId}
+                onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+                isLocked={isLocked}
+                isSelected={selectedPinId === pin.id}
+                onSelect={() => setSelectedPinId(pin.id)}
+                onOpenInspector={() => setInspectorPinId(pin.id)}
+                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+            );
+          } else if (pin.type === 'stopwatch') {
+            return (
+              <StopwatchPin key={pin.id} pin={pin}
+                onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+                isLocked={isLocked}
+                isSelected={selectedPinId === pin.id}
+                onSelect={() => setSelectedPinId(pin.id)}
+                onOpenInspector={() => setInspectorPinId(pin.id)}
+                onToggleFullscreen={(fs) => toggleFullscreen(pin.id, fs)}
+                isFullscreen={false}
+                onToggleFocus={(tid) => setActiveFocusTaskId(tid)}
+                activeTaskId={activeFocusTaskId}
+                activeTaskName={pins.find(p => p.type === 'todo' || p.type === 'daily-tasks')?.content ? 
+                  (() => {
+                    try {
+                      const todos = JSON.parse(pins.find(p => p.type === 'todo')?.content || '[]');
+                      const t = todos.find((t: any) => t.id === activeFocusTaskId);
+                      return t ? t.text : null;
+                    } catch(e) { return null; }
+                  })() : null}
+                onFocusIncrement={() => {
+                  const today = new Date().toISOString().split('T')[0];
+                  setFocusHistory(prev => ({
+                    ...prev,
+                    [today]: (prev[today] || 0) + 1
+                  }));
+                }}
+                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+            );
+          } else if (pin.type === 'focus-summary') {
+            return (
+              <FocusSummaryPin key={pin.id} pin={pin}
+                onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+                isLocked={isLocked}
+                isSelected={selectedPinId === pin.id}
+                onSelect={() => setSelectedPinId(pin.id)}
+                onOpenInspector={() => setInspectorPinId(pin.id)}
+                dailyTotal={dailyTotal}
+                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+            );
+          } else if (pin.type === 'weekly-analysis') {
+            return (
+              <WeeklyAnalysisPin key={pin.id} pin={pin}
+                onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+                isLocked={isLocked}
+                isSelected={selectedPinId === pin.id}
+                onSelect={() => setSelectedPinId(pin.id)}
+                onOpenInspector={() => setInspectorPinId(pin.id)}
+                weeklyData={weeklyData}
+                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+            );
+          } else {
+            return (
+              <Pin key={pin.id} pin={pin} boardId={boardId}
+                onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+                isLocked={isLocked}
+                isSelected={selectedPinId === pin.id}
+                onSelect={() => setSelectedPinId(pin.id)}
+                onOpenInspector={() => setInspectorPinId(pin.id)}
+                activeFocusTaskId={activeFocusTaskId}
+                onStartFocus={(tid) => {
                   const sw = pins.find(p => p.type === 'stopwatch');
-                  if (sw) updatePin(sw.id, { isPaused: true });
-                  setActiveFocusTaskId(null);
-                } else {
-                  const sw = pins.find(p => p.type === 'stopwatch');
-                  if (sw) {
-                    updatePin(sw.id, { isPaused: false, activeTaskId: tid });
-                    setActiveFocusTaskId(tid);
+                  if (activeFocusTaskId === tid) {
+                    if (sw) updatePin(sw.id, { isPaused: true });
+                    setActiveFocusTaskId(null);
                   } else {
-                    addPin('stopwatch');
+                    if (sw) {
+                      updatePin(sw.id, { isPaused: false, activeTaskId: tid });
+                    } else {
+                      addPin('stopwatch');
+                    }
                     setActiveFocusTaskId(tid);
                   }
+                }}
+                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+            );
+          }
+        })}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {fullscreenPinId && pins.find(p => p.id === fullscreenPinId) && (
+          <div className="fixed inset-0 z-[10000] bg-black">
+             {(() => {
+                const pin = pins.find(p => p.id === fullscreenPinId)!;
+                if (pin.type === 'stopwatch') {
+                   return (
+                     <StopwatchPin 
+                        pin={pin}
+                        onUpdate={updatePin} onDelete={deletePin} isDark={isDark}
+                        isLocked={isLocked} isSelected={false} onSelect={() => {}}
+                        onOpenInspector={() => {}} 
+                        onToggleFullscreen={(fs) => toggleFullscreen(pin.id, fs)}
+                        isFullscreen={true}
+                        activeTaskId={activeFocusTaskId}
+                        onFocusIncrement={() => {
+                          const today = new Date().toISOString().split('T')[0];
+                          setFocusHistory(prev => ({
+                            ...prev,
+                            [today]: (prev[today] || 0) + 1
+                          }));
+                        }}
+                        onDragStart={() => {}}
+                     />
+                   );
                 }
-              }}
-              onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
-          );
-        }
-      })}
+                return null;
+             })()}
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Universal Pin Inspector ────────────────────────────────── */}
       <AnimatePresence>
@@ -431,7 +469,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
           </AnimatePresence>
 
           <div 
-            className="fixed bottom-16 right-6 flex flex-col items-end gap-3"
+            className={`fixed bottom-16 right-6 flex flex-col items-end gap-3 transition-opacity duration-300 ${fullscreenPinId ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
             style={{ zIndex: 2147483647 }}
           >
             <AnimatePresence>
