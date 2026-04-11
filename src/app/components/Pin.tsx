@@ -358,7 +358,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
           <div
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 bg-black/[0.03] transition-colors"
+            className="flex items-center justify-between px-4 pt-4 pb-2.5 shrink-0 bg-black/[0.03] transition-colors"
           >
           <div 
             onMouseDown={(e) => {
@@ -369,12 +369,12 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
             }}
             className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
-            <GripVertical className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-400' : 'text-slate-400'}`} />
-              <span className={`text-xs capitalize tracking-wide font-medium text-slate-600`}>
+            <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
+              <span className={`text-[10px] uppercase tracking-[0.15em] font-bold text-slate-500`}>
               {pin.type.replace('-', ' ')}
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <AnimatePresence>
               {isHovered && !isLocked && (
                 <motion.button
@@ -386,9 +386,9 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                     e.stopPropagation();
                     onOpenInspector?.(pin.id);
                   }}
-                  className={`w-7 h-7 flex items-center justify-center rounded-xl hover:bg-black/5 transition-all`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/5 transition-all`}
                 >
-                  <Settings2 className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+                  <Settings2 className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-500'}`} />
                 </motion.button>
               )}
             </AnimatePresence>
@@ -399,16 +399,16 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                   e.stopPropagation();
                   onDelete(pin.id);
                 }}
-                className={`w-7 h-7 flex items-center justify-center rounded-xl hover:bg-rose-500 hover:text-white transition-all group`}
+                className={`w-8 h-8 flex items-center justify-center rounded-xl hover:bg-rose-500 hover:text-white transition-all group`}
               >
-                <X className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'} group-hover:text-white`} />
+                <X className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-500'} group-hover:text-white`} />
               </button>
             )}
           </div>
         </div>
 
         {/* Pin Content */}
-        <div className="flex-1 overflow-hidden px-3 pb-3 pt-1 min-h-0">
+        <div className="flex-1 overflow-hidden p-4 pt-2 min-h-0">
           {pin.type === 'note' && (
             <div className="h-full">
               {isEditingNote ? (

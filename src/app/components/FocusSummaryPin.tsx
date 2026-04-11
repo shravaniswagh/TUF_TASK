@@ -108,9 +108,9 @@ export function FocusSummaryPin({
             className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
             <GripVertical className="w-3.5 h-3.5 text-slate-400" />
-            <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>Focus Summary</span>
+            <span className={`text-[10px] uppercase tracking-[0.15em] font-bold ${textColorClass || 'text-slate-500'}`}>Focus Summary</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             <AnimatePresence>
               {isHovered && !isLocked && (
                 <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex gap-1">
@@ -134,7 +134,7 @@ export function FocusSummaryPin({
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center px-6 pb-4">
+        <div className="flex-1 flex flex-col justify-center p-5">
           <div className="flex items-center gap-3 mb-2">
             <div className={`p-2 rounded-xl ${isDark ? 'bg-white/5' : 'bg-black/5'}`}>
               <Timer className="w-5 h-5 text-indigo-500" />
