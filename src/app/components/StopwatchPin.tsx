@@ -76,20 +76,27 @@ export function StopwatchPin({
     setLocalSeconds(pin.totalSeconds || 0);
   }, [pin.totalSeconds]);
 
+  // Display Ticker (60fps for smoothness, but no DB saves)
   useEffect(() => {
     let interval: any;
-    if (!pin.isPaused) {
+    if (!pin.isPaused && pin.startTime) {
       interval = setInterval(() => {
-        setLocalSeconds(s => {
-          const next = s + 1;
-          onUpdate(pin.id, { totalSeconds: next });
-          onFocusIncrement?.();
-          return next;
-        });
+        const elapsedSinceStart = Math.floor((Date.now() - pin.startTime!) / 1000);
+        const liveSeconds = (pin.totalSeconds || 0) + elapsedSinceStart;
+        setLocalSeconds(liveSeconds);
+        
+        // Log to analytics EVERY MINUTE locally if running
+        // This keeps the board state reasonably updated but 
+        // focus increment logic is handled better on stop.
+        if (liveSeconds % 60 === 0 && liveSeconds > 0) {
+          onFocusIncrement?.(activeTaskId, 60);
+        }
       }, 1000);
+    } else {
+      setLocalSeconds(pin.totalSeconds || 0);
     }
     return () => clearInterval(interval);
-  }, [pin.isPaused, pin.id, onUpdate, onFocusIncrement]);
+  }, [pin.isPaused, pin.startTime, pin.totalSeconds, activeTaskId, onFocusIncrement]);
 
   const availableTasks = allPins.flatMap(p => {
     if (p.type === 'todo' || p.type === 'daily-tasks') {
@@ -105,16 +112,51 @@ export function StopwatchPin({
   });
 
   const handleToggle = () => {
-    onUpdate(pin.id, { isPaused: !pin.isPaused });
+    const isPausing = !pin.isPaused;
+    if (isPausing) {
+      // Logic for PAUSING:
+      // Calculate final elapsed time and save it to totalSeconds
+      const sessionSeconds = pin.startTime ? Math.floor((Date.now() - pin.startTime) / 1000) : 0;
+      const newTotal = (pin.totalSeconds || 0) + sessionSeconds;
+      
+      onUpdate(pin.id, { 
+        isPaused: true, 
+        totalSeconds: newTotal,
+        startTime: undefined 
+      });
+      
+      // Log the remaining seconds to analytics
+      if (sessionSeconds > 0 && activeTaskId) {
+        onFocusIncrement?.(activeTaskId, sessionSeconds);
+      }
+    } else {
+      // Logic for STARTING:
+      // Set the startTime to NOW
+      onUpdate(pin.id, { 
+        isPaused: false, 
+        startTime: Date.now() 
+      });
+    }
   };
 
   const handleReset = () => {
-    onUpdate(pin.id, { totalSeconds: 0 });
+    onUpdate(pin.id, { totalSeconds: 0, startTime: undefined, isPaused: true });
     setLocalSeconds(0);
   };
 
   const handleStop = () => {
-    onUpdate(pin.id, { totalSeconds: 0, isPaused: true });
+    // Calculate if there was any time running
+    const sessionSeconds = (!pin.isPaused && pin.startTime) ? Math.floor((Date.now() - pin.startTime) / 1000) : 0;
+    
+    // Log the current session to analytics before resetting
+    if (activeTaskId) {
+      const finalTotal = (pin.totalSeconds || 0) + sessionSeconds;
+      if (finalTotal > 0) {
+        onFocusIncrement?.(activeTaskId, finalTotal);
+      }
+    }
+
+    onUpdate(pin.id, { totalSeconds: 0, isPaused: true, startTime: undefined });
     setLocalSeconds(0);
   };
 

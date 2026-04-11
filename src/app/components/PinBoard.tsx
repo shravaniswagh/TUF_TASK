@@ -415,16 +415,15 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 activeTaskId={activeFocusTaskId}
                 activeTaskName={activeTaskInfo?.text}
                 activeTaskColor={activeTaskInfo?.color}
-                onFocusIncrement={(tid = activeFocusTaskId) => {
+                onFocusIncrement={(tid = activeFocusTaskId, amount = 1) => {
                   if (!tid) return;
                   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
-                  setFocusHistory(prev => ({
-                    ...prev,
-                    [today]: {
-                      ...(prev[today] || {}),
-                      [tid]: (prev[today]?.[tid] || 0) + 1
-                    }
-                  }));
+                  setFocusHistory(prev => {
+                    const newHist = { ...prev };
+                    if (!newHist[today]) newHist[today] = {};
+                    newHist[today][tid] = (newHist[today][tid] || 0) + amount;
+                    return newHist;
+                  });
                 }}
                 onDragStart={onDragStart} isDragging={dragging?.id === pin.id}
                 allPins={pins} />
