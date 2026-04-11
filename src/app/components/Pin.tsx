@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { THEME_CONFIG } from '../theme-config';
 import { Resizable } from 're-resizable';
-import { X, GripVertical, Image as ImageIcon, Palette, Upload, Type, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Settings2, Sun, Moon, Play, Pause } from 'lucide-react';
+import { X, GripVertical, Image as ImageIcon, Upload, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Play, Pause } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export interface PinData {
@@ -232,7 +232,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
 
   const handleColorChange = (color: string) => {
     onUpdate(pin.id, { color });
-    setShowColorPicker(false);
   };
 
   const handleBringToFront = () => {
