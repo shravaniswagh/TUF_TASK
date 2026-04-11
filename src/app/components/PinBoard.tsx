@@ -169,6 +169,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
     pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId 
   });
 
+  // Track the most recent local user action to shield against stale cloud snapshots
+  const localLastUpdatedRef = useRef<number>(Date.now());
+
   useEffect(() => {
     masterStateRef.current = { pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId };
   }, [pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId]);
@@ -185,6 +188,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
       if (snapshot.exists()) {
         const data = snapshot.data();
         
+        // VERSION GUARD: If cloud data is older than our last local action, ignore it.
+        // This prevents "rubber-banding" during drags or rapid updates.
+        if (data.lastUpdatedMillis && data.lastUpdatedMillis < localLastUpdatedRef.current && !isInitialLoad) {
+          console.log('[SYNC] 🛡️ Shield active: Ignoring stale cloud state.');
+          return;
+        }
+
         // Batch updates to local state
         if (data.pins) setPins(data.pins);
         if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
@@ -236,6 +246,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
       theme: mt,
       isLocked: il,
       lastUpdated: new Date().toISOString(),
+      lastUpdatedMillis: Date.now(),
       focusHistory: fh,
       activeFocusTaskId: af,
     }, { merge: true })
@@ -272,11 +283,16 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragging || isLocked) return;
-    setPins(prev => prev.map(p =>
-      p.id === dragging.id
-        ? { ...p, x: e.clientX - dragging.offsetX, y: e.clientY - dragging.offsetY }
-        : p
-    ));
+    localLastUpdatedRef.current = Date.now();
+    setPins(prev => {
+      const next = prev.map(p =>
+        p.id === dragging.id
+          ? { ...p, x: e.clientX - dragging.offsetX, y: e.clientY - dragging.offsetY }
+          : p
+      );
+      masterStateRef.current.pins = next;
+      return next;
+    });
   }, [dragging, isLocked]);
 
   const handleMouseUp = useCallback(() => setDragging(null), []);
@@ -313,6 +329,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   };
 
   const addPin = (type: PinData['type']) => {
+    localLastUpdatedRef.current = Date.now();
     const maxZ = pins.reduce((m, p) => Math.max(m, p.zIndex ?? 0), 0);
     const width = type === 'calendar' ? 480 : (type === 'stopwatch' ? 240 : 300);
     const height = type === 'calendar' ? 600 : (type === 'stopwatch' ? 220 : 200);
@@ -342,6 +359,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   };
 
   const updatePin = useCallback((id: string, updates: Partial<PinData>) => {
+    localLastUpdatedRef.current = Date.now();
     setPins(prev => {
       const next = prev.map(p => p.id === id ? { ...p, ...updates } : p);
       masterStateRef.current.pins = next;
@@ -350,6 +368,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, []);
 
   const deletePin = useCallback((id: string) => {
+    localLastUpdatedRef.current = Date.now();
     setPins(prev => {
       const next = prev.filter(p => p.id !== id);
       masterStateRef.current.pins = next;
@@ -450,6 +469,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 activeTaskColor={activeTaskInfo?.color}
                 onFocusIncrement={(tid = activeFocusTaskId, amount = 1) => {
                   if (!tid) return;
+                  localLastUpdatedRef.current = Date.now();
                   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
                   setFocusHistory(prev => {
                     const nextToday = { 
@@ -501,6 +521,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 onBringToFront={bringToFront}
                 activeFocusTaskId={activeFocusTaskId}
                 onStartFocus={(tid) => {
+                  localLastUpdatedRef.current = Date.now();
                   const sw = pins.find(p => p.type === 'stopwatch');
                   if (activeFocusTaskId === tid) {
                     if (sw) updatePin(sw.id, { isPaused: true, startTime: null });
