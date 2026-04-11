@@ -225,7 +225,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
     
     // Spawn on the right side
-    const width = type === 'calendar' ? 480 : 300;
+    const width = type === 'calendar' ? 480 : (type === 'stopwatch' ? 240 : 300);
     const initialX = screenWidth - width - 40 - (Math.random() * 40);
     
     const newPin: PinData = {
@@ -235,7 +235,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
       x: initialX,
       y: 100 + Math.random() * 200,
       width,
-      height: type === 'calendar' ? 600 : 200, // Thinner height for clock
+      height: type === 'calendar' ? 600 : (type === 'stopwatch' ? 150 : 200), // Compressed size for stopwatch
       color: '#FFFFFF',
       zIndex: maxZ + 1,
       rotation: (Math.random() - 0.5) * 4,
