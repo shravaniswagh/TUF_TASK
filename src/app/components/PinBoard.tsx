@@ -176,16 +176,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
           const data = docSnap.data();
           if (data.pins) setPins(data.pins);
           if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
-          
-          // FORCE THEME LOCK: Apply from database immediately
-          if (data.theme && (data.theme === 'light' || data.theme === 'dark')) {
-            setManualTheme(data.theme);
-          }
-          if (data.isLocked !== undefined) {
-            setIsLocked(data.isLocked);
-          }
-          if (data.focusHistory) {
-            setFocusHistory(data.focusHistory);
+          if (data.theme) setManualTheme(data.theme);
+          if (data.isLocked !== undefined) setIsLocked(data.isLocked);
+          if (data.focusHistory) setFocusHistory(data.focusHistory);
+          if (data.activeFocusTaskId) {
+            setActiveFocusTaskId(data.activeFocusTaskId);
+            masterStateRef.current.activeFocusTaskId = data.activeFocusTaskId;
           }
         }
         setHasLoaded(true);
@@ -197,12 +193,21 @@ export function PinBoard({ boardId }: { boardId: string }) {
     fetchPins();
   }, [boardId]);
 
-  // ── Unified Persistence Engine (Triple-Lock) ──────────────────
-  const latestStateRef = useRef({ pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded });
-  latestStateRef.current = { pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded };
+  // ── Synchronous Master State Cache (Race-Condition Shield) ──────
+  // We maintain a synchronous ref that mirrors our state instantly.
+  // This ensures beforeunload always sees the absolute latest data,
+  // even if React hasn't finished its async render cycle yet.
+  const masterStateRef = useRef({ 
+    pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId 
+  });
+
+  // Sync ref on every render as a backup
+  useEffect(() => {
+    masterStateRef.current = { pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId };
+  }, [pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId]);
 
   const doSave = useCallback(() => {
-    const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh, hasLoaded: hl } = latestStateRef.current;
+    const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh, hasLoaded: hl, activeFocusTaskId: af } = masterStateRef.current;
     if (!hl) return;
 
     const cleaned = p.map(pin => {
@@ -219,12 +224,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
       isLocked: il,
       lastUpdated: new Date().toISOString(),
       focusHistory: fh,
+      activeFocusTaskId: af,
     }, { merge: true })
       .then(() => console.log('[SAVE] ✅ Success: Workspace persistent.'))
       .catch((err) => console.error('[SAVE] ❌ Error: Cloud sync failed:', err));
   }, [boardId]);
 
-  // Default Debounced Save (500ms)
+  // Default Debounced Save (500ms) - now reads from MASTER REF
   useEffect(() => {
     if (!hasLoaded) return;
     const timer = setTimeout(doSave, 500);
@@ -234,12 +240,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
   // Fail-Safe: Flush on Page Refresh or Unmount
   useEffect(() => {
     const handleBeforeUnload = () => {
-      doSave();
+      doSave(); // Synchronously reads the latest from masterStateRef
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      doSave(); // Flush on unmount
+      doSave(); 
     };
   }, [doSave]);
 
@@ -313,16 +319,30 @@ export function PinBoard({ boardId }: { boardId: string }) {
       rotation: (Math.random() - 0.5) * 4,
     };
 
-    setPins(prev => [...prev, newPin]);
+    setPins(prev => {
+      const next = [...prev, newPin];
+      masterStateRef.current.pins = next;
+      return next;
+    });
     setShowAddMenu(false);
     setSelectedPinId(newPin.id);
   };
 
-  const updatePin = useCallback((id: string, updates: Partial<PinData>) =>
-    setPins(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p)), []);
+  const updatePin = useCallback((id: string, updates: Partial<PinData>) => {
+    setPins(prev => {
+      const next = prev.map(p => p.id === id ? { ...p, ...updates } : p);
+      masterStateRef.current.pins = next;
+      return next;
+    });
+  }, []);
 
-  const deletePin = useCallback((id: string) =>
-    setPins(prev => prev.filter(p => p.id !== id)), []);
+  const deletePin = useCallback((id: string) => {
+    setPins(prev => {
+      const next = prev.filter(p => p.id !== id);
+      masterStateRef.current.pins = next;
+      return next;
+    });
+  }, []);
 
   const toggleFullscreen = useCallback((id: string, isFullscreen: boolean) => {
     setFullscreenPinId(isFullscreen ? id : null);
@@ -419,10 +439,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
                   if (!tid) return;
                   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
                   setFocusHistory(prev => {
-                    const newHist = { ...prev };
-                    if (!newHist[today]) newHist[today] = {};
-                    newHist[today][tid] = (newHist[today][tid] || 0) + amount;
-                    return newHist;
+                    const nextToday = { 
+                      ...(prev[today] || {}), 
+                      [tid]: (prev[today]?.[tid] || 0) + amount 
+                    };
+                    const next = { ...prev, [today]: nextToday };
+                    masterStateRef.current.focusHistory = next;
+                    return next;
                   });
                 }}
                 onDragStart={onDragStart} isDragging={dragging?.id === pin.id}
@@ -467,15 +490,17 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 onStartFocus={(tid) => {
                   const sw = pins.find(p => p.type === 'stopwatch');
                   if (activeFocusTaskId === tid) {
-                    if (sw) updatePin(sw.id, { isPaused: true });
+                    if (sw) updatePin(sw.id, { isPaused: true, startTime: null });
                     setActiveFocusTaskId(null);
+                    masterStateRef.current.activeFocusTaskId = null;
                   } else {
                     if (sw) {
-                      updatePin(sw.id, { isPaused: false, activeTaskId: tid });
+                      updatePin(sw.id, { isPaused: false, startTime: Date.now() });
                     } else {
                       addPin('stopwatch');
                     }
                     setActiveFocusTaskId(tid);
+                    masterStateRef.current.activeFocusTaskId = tid;
                   }
                 }}
                 onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
@@ -501,16 +526,18 @@ export function PinBoard({ boardId }: { boardId: string }) {
                         activeTaskId={activeFocusTaskId}
                         activeTaskName={activeTaskInfo?.text}
                         activeTaskColor={activeTaskInfo?.color}
-                        onFocusIncrement={(tid = activeFocusTaskId) => {
+                        onFocusIncrement={(tid = activeFocusTaskId, amount = 1) => {
                           if (!tid) return;
-                          const today = new Date().toISOString().split('T')[0];
-                          setFocusHistory(prev => ({
-                            ...prev,
-                            [today]: {
-                              ...(prev[today] || {}),
-                              [tid]: (prev[today]?.[tid] || 0) + 1
-                            }
-                          }));
+                          const today = new Date().toLocaleDateString('en-CA');
+                          setFocusHistory(prev => {
+                            const nextToday = { 
+                              ...(prev[today] || {}), 
+                              [tid]: (prev[today]?.[tid] || 0) + amount 
+                            };
+                            const next = { ...prev, [today]: nextToday };
+                            masterStateRef.current.focusHistory = next;
+                            return next;
+                          });
                         }}
                         onDragStart={() => {}}
                         onBringToFront={bringToFront}
@@ -590,8 +617,12 @@ export function PinBoard({ boardId }: { boardId: string }) {
                               bg="bg-slate-100 dark:bg-slate-800" 
                               label={isLocked ? 'Unlock Board' : 'Lock Board'} 
                               onClick={() => {
-                                setIsLocked(!isLocked);
-                                localStorage.setItem('board-locked', String(!isLocked));
+                                setIsLocked(prev => {
+                                  const next = !prev;
+                                  masterStateRef.current.isLocked = next;
+                                  localStorage.setItem('board-locked', String(next));
+                                  return next;
+                                });
                               }} 
                             />
                             <MenuBtn 
@@ -616,7 +647,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
                           <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Settings</span>
                         </div>
     
-                        <button onClick={toggleTheme} className="w-full p-3 flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl mb-4 border border-slate-200 dark:border-slate-700 shadow-sm transition-all active:scale-95 group">
+                        <button onClick={() => {
+                          setManualTheme(prev => {
+                            const next = prev === 'dark' ? 'light' : 'dark';
+                            masterStateRef.current.manualTheme = next;
+                            return next;
+                          });
+                        }} className="w-full p-3 flex items-center justify-between bg-white dark:bg-slate-800 rounded-xl mb-4 border border-slate-200 dark:border-slate-700 shadow-sm transition-all active:scale-95 group">
                           <div className="flex items-center gap-2">
                             {isDark ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-500" />}
                             <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{isDark ? 'Forced Dark' : 'Forced Light'}</span>
@@ -632,7 +669,10 @@ export function PinBoard({ boardId }: { boardId: string }) {
                             {palette.map(t => (
                               <button
                                 key={t.name}
-                                onClick={() => setBoardColor(t.color)}
+                                onClick={() => {
+                                  setBoardColor(t.color);
+                                  masterStateRef.current.boardColor = t.color;
+                                }}
                                 className={`w-9 h-9 rounded-lg border-2 transition-all hover:scale-105 active:scale-95 flex items-center justify-center ${boardColor === t.color ? 'border-indigo-500 shadow-sm' : 'border-transparent'}`}
                                 style={{ backgroundColor: t.color || baseBg }}
                               >
@@ -667,6 +707,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                             disabled={clearConfirmInput !== 'confirm'}
                             onClick={() => {
                               setPins([]);
+                              masterStateRef.current.pins = [];
                               setShowAddMenu(false);
                               setMenuView('main');
                             }}
