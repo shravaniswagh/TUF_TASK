@@ -120,7 +120,7 @@ export function StopwatchPin({
         inset: isFullscreen ? 0 : 'auto',
         left: isFullscreen ? 0 : pin.x,
         top: isFullscreen ? 0 : pin.y,
-        zIndex: isFullscreen ? 10000 : (isDragging ? 9999 : (pin.zIndex ?? 1)),
+        zIndex: isFullscreen ? 10000 : (isDragging ? 1000 : (pin.zIndex ?? 1)),
         width: isFullscreen ? '100vw' : pin.width,
         height: isFullscreen ? '100vh' : pin.height,
       }}

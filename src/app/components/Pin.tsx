@@ -303,7 +303,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
         left:       pin.x,
         top:        pin.y,
         opacity:    isDragging ? 0.75 : 1,
-        zIndex:     isDragging ? 9999 : (pin.zIndex ?? 1),
+        zIndex:     isDragging ? 1000 : (pin.zIndex ?? 1),
         transform:  isDragging
           ? 'rotate(0deg) scale(1.04)'
           : `rotate(${pin.rotation ?? 0}deg)`,

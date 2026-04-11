@@ -59,7 +59,7 @@ export function FocusSummaryPin({
         position: 'absolute',
         left: pin.x,
         top: pin.y,
-        zIndex: isDragging ? 9999 : (pin.zIndex ?? 1),
+        zIndex: isDragging ? 1000 : (pin.zIndex ?? 1),
       }}
     >
       <motion.div

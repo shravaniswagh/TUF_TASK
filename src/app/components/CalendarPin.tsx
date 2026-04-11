@@ -84,7 +84,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
         left:       pin.x,
         top:        pin.y,
         opacity:    isDragging ? 0.85 : 1,
-        zIndex:     isDragging ? 9999 : (pin.zIndex ?? 100),
+        zIndex:     isDragging ? 1000 : (pin.zIndex ?? 100),
         transform:  isDragging ? 'scale(1.02)' : 'scale(1)',
         transition: isDragging ? 'none' : 'opacity 0.15s, transform 0.2s',
       }}
