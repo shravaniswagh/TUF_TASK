@@ -500,7 +500,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
             {showAddMenu && (
               <div 
                 className="fixed inset-0 bg-black/5 backdrop-blur-[1px]" 
-                style={{ zIndex: 2147483646 }}
+                style={{ zIndex: 2147483645 }}
                 onClick={() => setShowAddMenu(false)} 
               />
             )}
@@ -508,7 +508,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
           <div 
             className={`fixed bottom-16 right-6 flex flex-col items-end gap-3 transition-opacity duration-300 ${fullscreenPinId ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-            style={{ zIndex: 2147483647 }}
+            style={{ zIndex: 2147483646 }}
           >
             <AnimatePresence>
               {showAddMenu && (

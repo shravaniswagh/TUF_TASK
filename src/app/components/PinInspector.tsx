@@ -71,7 +71,7 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 380, opacity: 0 }}
       transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-      className="fixed top-0 right-0 bottom-0 w-[350px] bg-white/70 dark:bg-slate-900/70 backdrop-blur-[32px] shadow-[-32px_0_64px_rgba(0,0,0,0.1)] border-l border-white/40 dark:border-slate-800/40 z-[99999999] flex flex-col overflow-hidden"
+      className="fixed top-0 right-0 bottom-0 w-[350px] bg-white/70 dark:bg-slate-900/70 backdrop-blur-[32px] shadow-[-32px_0_64px_rgba(0,0,0,0.1)] border-l border-white/40 dark:border-slate-800/40 z-[2147483647] flex flex-col overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Floating Close Button */}
