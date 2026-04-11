@@ -209,10 +209,10 @@ export function PinBoard({ boardId }: { boardId: string }) {
       setDoc(doc(db, 'boards', boardId), {
         pins: cleaned,
         boardBackgroundColor: boardColor,
-        theme: manualTheme, // Save forced theme to database
-        isLocked: isLocked, // Save lock state to database
+        theme: manualTheme,
+        isLocked: isLocked,
         lastUpdated: new Date().toISOString(),
-        focusHistory: focusHistory, // Save focus history to database
+        focusHistory: focusHistory,
       }, { merge: true }).catch(console.error);
     }, 1200);
     return () => clearTimeout(timer);

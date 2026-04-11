@@ -22,10 +22,15 @@ export default function App() {
 
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       if (u && !isWallpaperMode) {
-        if (boardId !== u.uid) {
-          window.history.replaceState({}, '', `/?board=${u.uid}&web=true`);
-          setBoardId(u.uid);
-        }
+        // Use the user's UID as the board ID — but only set it ONCE
+        // to avoid stale closure triggering repeated fetchPins
+        setBoardId(prev => {
+          if (prev !== u.uid) {
+            window.history.replaceState({}, '', `/?board=${u.uid}&web=true`);
+            return u.uid;
+          }
+          return prev; // Already set to user's UID — do nothing
+        });
       }
       
       setUser(u);
