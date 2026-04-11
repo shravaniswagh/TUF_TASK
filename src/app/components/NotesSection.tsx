@@ -64,7 +64,7 @@ export function NotesSection({
   };
 
   return (
-    <div className="h-full flex flex-col p-5 md:p-6">
+    <div className="h-full flex flex-col p-6 md:p-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-800">Notes</h2>
         <button
@@ -149,7 +149,7 @@ export function NotesSection({
 
       {/* Notes List */}
       <div 
-        className="flex-1 overflow-y-auto space-y-2.5 custom-scrollbar"
+        className="flex-1 overflow-y-auto space-y-3 custom-scrollbar"
         style={{
           // @ts-ignore
           '--scrollbar-color': scrollbarColor,
@@ -185,17 +185,23 @@ export function NotesSection({
                 style={{ borderLeft: note.color ? `4px solid ${note.color}` : 'none' }}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <span className="font-semibold tracking-tight">{formatDateRange(note.dateRange)}</span>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <Calendar className="w-3 h-3" />
+                    <span className="dark:text-slate-500">{formatDateRange(note.dateRange)}</span>
+                  </div>
                   <button
                     onClick={() => onDeleteNote(note.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-rose-50 rounded-xl transition-all ml-auto"
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-all ml-auto"
                     aria-label="Delete note"
                   >
-                    <X className="w-4 h-4 text-rose-400" />
+                    <X className="w-4 h-4 text-red-500" />
                   </button>
                 </div>
-                <div className="flex-1 px-1">
-                  <p className="text-sm text-slate-700 dark:text-slate-700 leading-relaxed font-medium">{note.text}</p>
+                <div className="flex-1">
+                  <div className="text-xs text-blue-600 dark:text-blue-600 font-medium mb-0.5">
+                    {formatDateRange(note.dateRange)}
+                  </div>
+                  <p className="text-sm text-slate-700 dark:text-slate-700 leading-relaxed">{note.text}</p>
                 </div>
               </motion.div>
             ))

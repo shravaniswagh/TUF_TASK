@@ -134,7 +134,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
           <div
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="flex items-center justify-between px-4 pt-4 pb-2.5 shrink-0 bg-black/[0.03] transition-colors"
+            className="flex items-center justify-between px-3 pt-3 pb-1 shrink-0 bg-black/[0.03] transition-colors"
           >
           <div 
             onMouseDown={(e) => {
@@ -146,10 +146,10 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
             className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
             <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
-            <span className={`text-[10px] uppercase tracking-[0.15em] font-bold ${textColorClass || 'text-slate-500'}`}>Calendar</span>
+            <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>Calendar</span>
           </div>
           
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <AnimatePresence>
               {isHovered && !isLocked && (
                 <motion.button

@@ -178,7 +178,7 @@ export function StopwatchPin({
                 <div
                   onMouseEnter={() => setIsHovered(true)}
                   onMouseLeave={() => setIsHovered(false)}
-                  className="flex items-center justify-between px-4 pt-4 pb-2.5 shrink-0 bg-black/[0.03] transition-colors"
+                  className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 bg-black/[0.03] transition-colors"
                 >
                   <div 
                     onMouseDown={(e) => {
@@ -190,7 +190,7 @@ export function StopwatchPin({
                     className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
                   >
                     <GripVertical className="w-3.5 h-3.5 text-slate-400" />
-                    <span className={`text-[10px] uppercase tracking-[0.15em] font-bold ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-500'}`}>Stopwatch</span>
+                    <span className={`text-xs capitalize tracking-wide font-medium ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`}>Stopwatch</span>
                   </div>
                 
                 <div className="flex items-center gap-1.5">
@@ -232,7 +232,7 @@ export function StopwatchPin({
               </div>
             )}
 
-            <div className="flex-1 flex flex-col items-center justify-center relative">
+            <div className="flex-1 flex flex-col items-center justify-center relative -mt-2">
               {isFullscreen && (
                   <button 
                      onClick={() => onToggleFullscreen?.(false)}
@@ -243,35 +243,35 @@ export function StopwatchPin({
                )}
 
               <div 
-                 className={`${timeFontSize} font-black tracking-tighter tabular-nums mb-2 transition-all`}
+                 className={`${timeFontSize} font-black tracking-tighter tabular-nums`}
                  style={{ color: clockTextColor, fontFamily: customFont }}
               >
                 {formatTime(localSeconds)}
               </div>
 
-              <div className={`flex items-center gap-8 mt-6 transition-all duration-300`}>
+              <div className={`flex items-center gap-6 mt-4 opacity-50 hover:opacity-100 transition-opacity z-10`}>
                 <button
                   onClick={(e) => { e.stopPropagation(); handleReset(); }}
                   className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
                   style={{ color: clockTextColor }}
                   title="Reset"
                 >
-                   <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10 shadow-sm border border-black/5`}>
-                      <RotateCcw className={isFullscreen ? "w-6 h-6" : "w-4 h-4"} />
+                   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
+                      <RotateCcw className={isFullscreen ? "w-8 h-8" : "w-5 h-5"} />
                    </div>
                 </button>
 
                 <button
                   onClick={(e) => { e.stopPropagation(); handleToggle(); }}
-                  className={`flex items-center justify-center transition-all hover:scale-110 active:scale-95`}
+                  className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
                   style={{ color: clockTextColor }}
                   title={pin.isPaused ? "Play" : "Pause"}
                 >
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center ${clockTextColor === '#ffffff' ? 'bg-white/10 hover:bg-white/20' : 'bg-indigo-500 hover:bg-indigo-600'} shadow-lg border border-black/5`}>
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center bg-black/10 hover:bg-black/20">
                      {pin.isPaused ? (
-                       <Play className={isFullscreen ? "w-8 h-8 ml-1.5" : "w-6 h-6 ml-1"} fill={clockTextColor === '#ffffff' ? 'currentColor' : 'white'} style={{ color: clockTextColor === '#ffffff' ? 'white' : 'white' }} />
+                       <Play className={isFullscreen ? "w-10 h-10 ml-1.5" : "w-6 h-6 ml-1"} fill="currentColor" />
                      ) : (
-                       <Pause className={isFullscreen ? "w-8 h-8" : "w-6 h-6"} fill={clockTextColor === '#ffffff' ? 'currentColor' : 'white'} style={{ color: clockTextColor === '#ffffff' ? 'white' : 'white' }} />
+                       <Pause className={isFullscreen ? "w-10 h-10" : "w-6 h-6"} fill="currentColor" />
                      )}
                   </div>
                 </button>
@@ -282,8 +282,8 @@ export function StopwatchPin({
                   style={{ color: clockTextColor }}
                   title="Stop"
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10 shadow-sm border border-black/5`}>
-                    <Square className={isFullscreen ? "w-6 h-6" : "w-4 h-4"} fill="currentColor" />
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
+                    <Square className={isFullscreen ? "w-8 h-8" : "w-5 h-5"} fill="currentColor" />
                   </div>
                 </button>
 

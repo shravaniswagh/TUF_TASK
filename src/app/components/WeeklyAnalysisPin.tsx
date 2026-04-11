@@ -139,11 +139,11 @@ export function WeeklyAnalysisPin({
         <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
 
         {/* Header */}
-          <div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            className="flex items-center justify-between px-4 pt-4 pb-2.5 shrink-0 bg-black/[0.03] transition-colors"
-          >
+        <div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 bg-black/[0.03] transition-colors"
+        >
           <div 
             onMouseDown={(e) => {
               if (isLocked) return;
@@ -154,13 +154,13 @@ export function WeeklyAnalysisPin({
             className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
             <GripVertical className="w-3.5 h-3.5 text-slate-400" />
-            <span className={`text-[10px] uppercase tracking-[0.15em] font-bold ${textColorClass || 'text-slate-500'}`}>Weekly Analysis</span>
+            <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>Weekly Analysis</span>
           </div>
           
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <AnimatePresence>
               {isHovered && !isLocked && (
-                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex gap-1.5">
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex gap-1">
                   <button
                     onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
                     className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/5 transition-all"
@@ -181,7 +181,7 @@ export function WeeklyAnalysisPin({
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col p-5 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
