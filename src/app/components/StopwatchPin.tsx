@@ -56,7 +56,13 @@ export function StopwatchPin({
 }: StopwatchPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showTaskSelector, setShowTaskSelector] = useState(false);
-  const [localSeconds, setLocalSeconds] = useState(pin.totalSeconds || 0);
+  const [localSeconds, setLocalSeconds] = useState(() => {
+    if (!pin.isPaused && pin.startTime) {
+      const elapsed = Math.floor((Date.now() - pin.startTime) / 1000);
+      return (pin.totalSeconds || 0) + elapsed;
+    }
+    return pin.totalSeconds || 0;
+  });
   const [selectorPos, setSelectorPos] = useState({ top: 0, left: 0, width: 256 });
   const selectorBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -76,27 +82,46 @@ export function StopwatchPin({
     setLocalSeconds(pin.totalSeconds || 0);
   }, [pin.totalSeconds]);
 
-  // Display Ticker (60fps for smoothness, but no DB saves)
+  // Display Ticker (Smoother UI updates, NO periodic DB saves)
   useEffect(() => {
     let interval: any;
-    if (!pin.isPaused && pin.startTime) {
-      interval = setInterval(() => {
+    const updateLocalTime = () => {
+      if (!pin.isPaused && pin.startTime) {
         const elapsedSinceStart = Math.floor((Date.now() - pin.startTime!) / 1000);
-        const liveSeconds = (pin.totalSeconds || 0) + elapsedSinceStart;
-        setLocalSeconds(liveSeconds);
-        
-        // Log to analytics EVERY MINUTE locally if running
-        // This keeps the board state reasonably updated but 
-        // focus increment logic is handled better on stop.
-        if (liveSeconds % 60 === 0 && liveSeconds > 0) {
-          onFocusIncrement?.(activeTaskId, 60);
-        }
-      }, 1000);
-    } else {
-      setLocalSeconds(pin.totalSeconds || 0);
+        setLocalSeconds((pin.totalSeconds || 0) + elapsedSinceStart);
+      } else {
+        setLocalSeconds(pin.totalSeconds || 0);
+      }
+    };
+
+    updateLocalTime(); // Run once immediately to prevent flicker
+    
+    if (!pin.isPaused && pin.startTime) {
+      interval = setInterval(updateLocalTime, 1000);
     }
     return () => clearInterval(interval);
-  }, [pin.isPaused, pin.startTime, pin.totalSeconds, activeTaskId, onFocusIncrement]);
+  }, [pin.isPaused, pin.startTime, pin.totalSeconds]);
+
+  // Task Switch Flush: If the user changes the active task while running, 
+  // we MUST log the progress to the PREVIOUS task before starting the new one.
+  const prevTaskIdRef = useRef(activeTaskId);
+  useEffect(() => {
+    if (prevTaskIdRef.current !== activeTaskId) {
+      if (!pin.isPaused && pin.startTime) {
+        const sessionSeconds = Math.floor((Date.now() - pin.startTime) / 1000);
+        if (sessionSeconds > 0 && prevTaskIdRef.current) {
+          // Log to previous task
+          onFocusIncrement?.(prevTaskIdRef.current, sessionSeconds);
+        }
+        // Start new session timestamp for the new task
+        onUpdate(pin.id, { 
+          totalSeconds: (pin.totalSeconds || 0) + sessionSeconds,
+          startTime: Date.now() 
+        });
+      }
+      prevTaskIdRef.current = activeTaskId;
+    }
+  }, [activeTaskId, pin.isPaused, pin.startTime, pin.totalSeconds, onFocusIncrement, pin.id, onUpdate]);
 
   const availableTasks = allPins.flatMap(p => {
     if (p.type === 'todo' || p.type === 'daily-tasks') {
@@ -145,15 +170,13 @@ export function StopwatchPin({
   };
 
   const handleStop = () => {
-    // Calculate if there was any time running
+    // Calculate if there was any time running in the current session
     const sessionSeconds = (!pin.isPaused && pin.startTime) ? Math.floor((Date.now() - pin.startTime) / 1000) : 0;
     
-    // Log the current session to analytics before resetting
-    if (activeTaskId) {
-      const finalTotal = (pin.totalSeconds || 0) + sessionSeconds;
-      if (finalTotal > 0) {
-        onFocusIncrement?.(activeTaskId, finalTotal);
-      }
+    // Log ONLY the current session's duration to analytics
+    // (Previous segments were already logged when paused/switched)
+    if (sessionSeconds > 0 && activeTaskId) {
+      onFocusIncrement?.(activeTaskId, sessionSeconds);
     }
 
     onUpdate(pin.id, { totalSeconds: 0, isPaused: true, startTime: undefined });
