@@ -164,47 +164,60 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, [pins, activeFocusTaskId]);
 
   /* ── Load & Sync ─────────────────────────────────────────────── */
-  useEffect(() => {
-    const fetchPins = async () => {
-      if (prevBoardIdRef.current !== boardId) {
-        setHasLoaded(false);
-        prevBoardIdRef.current = boardId;
-      }
-      try {
-        const docSnap = await getDoc(doc(db, 'boards', boardId));
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.pins) setPins(data.pins);
-          if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
-          if (data.theme) setManualTheme(data.theme);
-          if (data.isLocked !== undefined) setIsLocked(data.isLocked);
-          if (data.focusHistory) setFocusHistory(data.focusHistory);
-          if (data.activeFocusTaskId) {
-            setActiveFocusTaskId(data.activeFocusTaskId);
-            masterStateRef.current.activeFocusTaskId = data.activeFocusTaskId;
-          }
-        }
-        setHasLoaded(true);
-      } catch (err) {
-        console.error('Fetch error:', err);
-        setHasLoaded(true);
-      }
-    };
-    fetchPins();
-  }, [boardId]);
-
   // ── Synchronous Master State Cache (Race-Condition Shield) ──────
-  // We maintain a synchronous ref that mirrors our state instantly.
-  // This ensures beforeunload always sees the absolute latest data,
-  // even if React hasn't finished its async render cycle yet.
   const masterStateRef = useRef({ 
     pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId 
   });
 
-  // Sync ref on every render as a backup
   useEffect(() => {
     masterStateRef.current = { pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId };
   }, [pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId]);
+
+  /* ── Live-Sync Firestore Listener ─────────────────────────────── */
+  useEffect(() => {
+    let isInitialLoad = true;
+    
+    // Subscribe to live updates
+    const unsubscribe = onSnapshot(doc(db, 'boards', boardId), (snapshot) => {
+      // SHIELD: Ignore our own updates to prevent infinite loops
+      if (snapshot.metadata.hasPendingWrites && !isInitialLoad) return;
+      
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        
+        // Batch updates to local state
+        if (data.pins) setPins(data.pins);
+        if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
+        if (data.theme) setManualTheme(data.theme);
+        if (data.isLocked !== undefined) setIsLocked(data.isLocked);
+        if (data.focusHistory) setFocusHistory(data.focusHistory);
+        if (data.activeFocusTaskId) {
+          setActiveFocusTaskId(data.activeFocusTaskId);
+        } else {
+          setActiveFocusTaskId(null);
+        }
+
+        // Always sync the master ref on remote load
+        masterStateRef.current = {
+          pins: data.pins || [],
+          boardColor: data.boardBackgroundColor || null,
+          manualTheme: data.theme || null,
+          isLocked: data.isLocked || false,
+          focusHistory: data.focusHistory || {},
+          activeFocusTaskId: data.activeFocusTaskId || null,
+          hasLoaded: true
+        };
+      }
+      
+      setHasLoaded(true);
+      isInitialLoad = false;
+    }, (err) => {
+      console.error('Snapshot error:', err);
+      setHasLoaded(true);
+    });
+
+    return () => unsubscribe();
+  }, [boardId]);
 
   const doSave = useCallback(() => {
     const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh, hasLoaded: hl, activeFocusTaskId: af } = masterStateRef.current;
