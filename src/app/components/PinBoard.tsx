@@ -172,9 +172,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
   // Track the most recent local user action to shield against stale cloud snapshots
   const localLastUpdatedRef = useRef<number>(Date.now());
 
-  useEffect(() => {
-    masterStateRef.current = { pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId };
-  }, [pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded, activeFocusTaskId]);
+  // The poisonous useEffect that redundantly overwrote masterStateRef.current has been removed.
+  // We rely fully on synchronous mutation of the ref during state changes (setPins, setBoardColor, etc.)
+  // This prevents React concurrent rendering closures from replacing fresh ref state with stale state.
 
   /* ── Live-Sync Firestore Listener ─────────────────────────────── */
   useEffect(() => {
@@ -296,16 +296,18 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, [dragging, isLocked]);
 
   const handleMouseUp = useCallback(() => {
-    setDragging(prev => {
-      if (prev) {
-        setTimeout(doSave, 0);
-      }
-      return null;
-    });
-  }, [doSave]);
+    if (dragging) {
+      setTimeout(doSave, 0);
+    }
+    setDragging(null);
+  }, [dragging, doSave]);
 
   const bringToFront = useCallback((id: string) => {
-    setPins(prev => prev.map(p => p.id === id ? { ...p, zIndex: maxZ + 1 } : p));
+    setPins(prev => {
+      const next = prev.map(p => p.id === id ? { ...p, zIndex: maxZ + 1 } : p);
+      masterStateRef.current.pins = next;
+      return next;
+    });
     setMaxZ(z => z + 1);
   }, [maxZ]);
 
