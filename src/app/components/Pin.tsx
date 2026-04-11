@@ -323,7 +323,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
         topRight: true, bottomRight: true, bottomLeft: true, topLeft: true,
       }}
     >
-    >
       <motion.div
         initial={{ scale: 0.85, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
