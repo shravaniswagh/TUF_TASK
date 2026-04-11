@@ -74,13 +74,13 @@ function getContrastColor(hexColor?: string) {
     const g = parseInt(fullHex.substring(2, 4), 16);
     const b = parseInt(fullHex.substring(4, 6), 16);
     
-    if (isNaN(r) || isNaN(g) || isNaN(b)) return 'text-slate-900';
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return 'text-slate-600';
     
     // Brightness formula
     const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness > 140 ? 'text-black' : 'text-white';
+    return brightness > 140 ? 'text-slate-600' : 'text-white';
   } catch (e) {
-    return 'text-slate-900';
+    return 'text-slate-600';
   }
 }
 
@@ -367,7 +367,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
             className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
             <GripVertical className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-400' : 'text-slate-400'}`} />
-              <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>
+              <span className={`text-xs capitalize tracking-wide font-medium text-slate-600`}>
               {pin.type.replace('-', ' ')}
             </span>
           </div>
@@ -507,7 +507,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                   className="flex-1 flex flex-col items-center justify-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-slate-200 hover:border-slate-300 transition-all bg-white/20"
                 >
                   <ImageIcon className="w-6 h-6 text-slate-400" />
-                  <span className="text-xs text-slate-500">Add image</span>
+                  <span className="text-xs text-slate-600">Add image</span>
                 </div>
               )}
             </div>

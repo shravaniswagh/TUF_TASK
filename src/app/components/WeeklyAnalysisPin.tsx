@@ -35,7 +35,7 @@ function getContrastColor(hexColor?: string) {
   const g = parseInt(fullHex.substring(2, 4), 16);
   const b = parseInt(fullHex.substring(4, 6), 16);
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 140 ? 'text-black' : 'text-white';
+  return brightness > 140 ? 'text-slate-600' : 'text-white';
 }
 
 export function WeeklyAnalysisPin({ 
@@ -136,7 +136,7 @@ export function WeeklyAnalysisPin({
         {/* Header */}
         <div
           className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0"
-          style={{ backgroundColor: textColorClass === 'text-black' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.08)' }}
+          style={{ backgroundColor: textColorClass === 'text-slate-600' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.08)' }}
         >
           <div 
             onMouseDown={(e) => {

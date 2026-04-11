@@ -34,13 +34,13 @@ function getContrastColor(hexColor?: string) {
   const hex = hexColor.replace('#', '');
   let fullHex = hex;
   if (hex.length === 3) fullHex = hex.split('').map(c => c + c).join('');
-  if (fullHex.length !== 6) return 'text-slate-900'; 
+  if (fullHex.length !== 6) return 'text-slate-600'; 
   const r = parseInt(fullHex.substring(0, 2), 16);
   const g = parseInt(fullHex.substring(2, 4), 16);
   const b = parseInt(fullHex.substring(4, 6), 16);
   // Brightness formula
   const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brightness > 140 ? 'text-black' : 'text-white';
+  return brightness > 140 ? 'text-slate-600' : 'text-white';
 }
 
 function formatTime(totalSeconds: number) {
@@ -191,7 +191,7 @@ export function StopwatchPin({
                     className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
                   >
                     <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
-                    <span className={`text-xs capitalize tracking-wide font-medium ${clockTextColor === '#ffffff' ? 'text-white' : 'text-black'}`}>Stopwatch</span>
+                    <span className={`text-xs capitalize tracking-wide font-medium ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`}>Stopwatch</span>
                   </div>
                 
                 <div className="flex items-center gap-1.5">
