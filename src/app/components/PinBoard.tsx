@@ -665,7 +665,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
           </AnimatePresence>
 
           <div 
-            className={`fixed bottom-16 right-6 flex flex-col items-end gap-3 transition-opacity duration-300 ${fullscreenPinId ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+            className={`fixed bottom-16 right-6 flex flex-col items-end gap-3 transition-opacity duration-300 ${fullscreenPinId || !hasLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
             style={{ zIndex: 2147483646 }}
           >
             <AnimatePresence>
