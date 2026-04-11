@@ -409,24 +409,69 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const toggleTheme = () => setManualTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
+  const handleFocusIncrement = useCallback((tid: string | null = activeFocusTaskId, amount: number = 1) => {
+    if (!tid) return;
+    localLastUpdatedRef.current = Date.now();
+    const today = new Date().toLocaleDateString('en-CA');
+    setFocusHistory(prev => {
+      const nextToday = { 
+        ...(prev[today] || {}), 
+        [tid]: (prev[today]?.[tid] || 0) + amount 
+      };
+      const next = { ...prev, [today]: nextToday };
+      masterStateRef.current.focusHistory = next;
+      return next;
+    });
+  }, [activeFocusTaskId]);
+
   const handleToggleFocus = (tid: string | null) => {
     localLastUpdatedRef.current = Date.now();
     const sw = pins.find(p => p.type === 'stopwatch');
-    if (activeFocusTaskId === tid) {
-      if (sw) updatePin(sw.id, { isPaused: true, startTime: null });
-      setActiveFocusTaskId(null);
-      masterStateRef.current.activeFocusTaskId = null;
-    } else {
-      if (tid) {
-        if (sw) {
-          updatePin(sw.id, { isPaused: false, startTime: Date.now() });
+    
+    // First, process any running time on the current task BEFORE swapping or pausing
+    if (sw && !sw.isPaused && sw.startTime && activeFocusTaskId) {
+      const sessionSeconds = Math.floor((Date.now() - sw.startTime) / 1000);
+      if (sessionSeconds > 0) {
+        handleFocusIncrement(activeFocusTaskId, sessionSeconds);
+      }
+      const newTotal = (sw.totalSeconds || 0) + sessionSeconds;
+      
+      if (activeFocusTaskId === tid) {
+        // 1. PAUSING
+        updatePin(sw.id, { isPaused: true, totalSeconds: newTotal, startTime: null });
+        setActiveFocusTaskId(null);
+        masterStateRef.current.activeFocusTaskId = null;
+        return; // Done.
+      } else {
+        // 2. SWITCHING TO NEW TASK
+        if (tid) {
+          updatePin(sw.id, { isPaused: false, totalSeconds: newTotal, startTime: Date.now() });
         } else {
-          addPin('stopwatch');
+          updatePin(sw.id, { isPaused: true, totalSeconds: newTotal, startTime: null });
         }
       }
-      setActiveFocusTaskId(tid);
-      masterStateRef.current.activeFocusTaskId = tid;
+    } else {
+      // Stopwatch was PAUSED or missing
+      if (activeFocusTaskId === tid) {
+        // 3. DESELECTING Task (already paused)
+        setActiveFocusTaskId(null);
+        masterStateRef.current.activeFocusTaskId = null;
+        if (sw) updatePin(sw.id, { isPaused: true, startTime: null });
+        return; // Done.
+      } else {
+        // 4. STARTING Task
+        if (tid) {
+          if (sw) {
+            updatePin(sw.id, { isPaused: false, startTime: Date.now() });
+          } else {
+            addPin('stopwatch'); 
+          }
+        }
+      }
     }
+
+    setActiveFocusTaskId(tid);
+    masterStateRef.current.activeFocusTaskId = tid;
   };
 
   /* ── Rendering Logic ────────────────────────────────────────── */
@@ -508,20 +553,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 activeTaskId={activeFocusTaskId}
                 activeTaskName={activeTaskInfo?.text}
                 activeTaskColor={activeTaskInfo?.color}
-                onFocusIncrement={(tid = activeFocusTaskId, amount = 1) => {
-                  if (!tid) return;
-                  localLastUpdatedRef.current = Date.now();
-                  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
-                  setFocusHistory(prev => {
-                    const nextToday = { 
-                      ...(prev[today] || {}), 
-                      [tid]: (prev[today]?.[tid] || 0) + amount 
-                    };
-                    const next = { ...prev, [today]: nextToday };
-                    masterStateRef.current.focusHistory = next;
-                    return next;
-                  });
-                }}
+                onFocusIncrement={handleFocusIncrement}
                 onDragStart={onDragStart} isDragging={dragging?.id === pin.id}
                 allPins={pins} />
             );
@@ -586,19 +618,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                         activeTaskId={activeFocusTaskId}
                         activeTaskName={activeTaskInfo?.text}
                         activeTaskColor={activeTaskInfo?.color}
-                        onFocusIncrement={(tid = activeFocusTaskId, amount = 1) => {
-                          if (!tid) return;
-                          const today = new Date().toLocaleDateString('en-CA');
-                          setFocusHistory(prev => {
-                            const nextToday = { 
-                              ...(prev[today] || {}), 
-                              [tid]: (prev[today]?.[tid] || 0) + amount 
-                            };
-                            const next = { ...prev, [today]: nextToday };
-                            masterStateRef.current.focusHistory = next;
-                            return next;
-                          });
-                        }}
+                        onFocusIncrement={handleFocusIncrement}
                         onDragStart={() => {}}
                         onBringToFront={bringToFront}
                         allPins={pins}
