@@ -98,7 +98,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, [focusHistory]);
 
   const dailyTotal = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
     return Object.values(focusHistory[today] || {}).reduce((sum, val) => sum + val, 0);
   }, [focusHistory]);
   const [copied, setCopied] = useState(false);
@@ -383,7 +383,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                   })() : null}
                 onFocusIncrement={(tid = activeFocusTaskId) => {
                   if (!tid) return;
-                  const today = new Date().toISOString().split('T')[0];
+                  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
                   setFocusHistory(prev => ({
                     ...prev,
                     [today]: {

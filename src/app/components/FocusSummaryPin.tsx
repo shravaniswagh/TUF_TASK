@@ -41,6 +41,7 @@ export function FocusSummaryPin({
   const [isHovered, setIsHovered] = useState(false);
   const hours = Math.floor(dailyTotal / 3600);
   const minutes = Math.floor((dailyTotal % 3600) / 60);
+  const seconds = dailyTotal % 60;
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
   const defaultBg = isDark ? '#1a1a1a' : '#f8fafc';
   const bgColor = pin.color || defaultBg;
@@ -111,23 +112,22 @@ export function FocusSummaryPin({
           <div className="flex items-center gap-1">
             <AnimatePresence>
               {isHovered && !isLocked && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
-                  className={`w-7 h-7 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10`}
-                >
-                  <Settings2 className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-600'}`} />
-                </motion.button>
+                <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex gap-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
+                    className={`w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-black/10 transition-all`}
+                  >
+                    <Settings2 className={`w-3.5 h-3.5 ${textColorClass === 'text-white' ? 'text-white' : 'text-slate-600'}`} />
+                  </button>
+                </motion.div>
               )}
             </AnimatePresence>
             {!isLocked && (
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
-                className={`w-7 h-7 flex items-center justify-center rounded-xl hover:bg-black/10 transition-colors`}
+                className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${textColorClass === 'text-white' ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
               >
-                <X className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+                <X className={`w-3.5 h-3.5 ${textColorClass === 'text-white' ? 'text-white' : 'text-slate-500'}`} />
               </button>
             )}
           </div>
@@ -143,7 +143,7 @@ export function FocusSummaryPin({
 
           <div className="flex items-baseline gap-1">
             <span className={`text-4xl font-black tracking-tighter tabular-nums ${textColorClass}`}>
-              {hours}h <span className="text-xl opacity-60">{minutes}m</span>
+              {hours}h {minutes}m <span className="text-xl opacity-60">{seconds}s</span>
             </span>
           </div>
           
