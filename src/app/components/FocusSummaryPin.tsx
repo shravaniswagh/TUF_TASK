@@ -1,7 +1,8 @@
 import { motion } from 'motion/react';
 import { Resizable } from 're-resizable';
-import { Target, Timer, TrendingUp } from 'lucide-react';
+import { Timer, Target, GripVertical, X } from 'lucide-react';
 import { PinData } from './Pin';
+import { THEME_CONFIG } from '../theme-config';
 
 interface FocusSummaryPinProps {
   pin: PinData;
@@ -16,16 +17,36 @@ interface FocusSummaryPinProps {
   dailyTotal: number; // in seconds
 }
 
+const PIN_HEAD_COLORS: Record<string, string> = THEME_CONFIG.pinHeads;
+
+function getContrastColor(hexColor?: string) {
+  if (!hexColor || hexColor === 'transparent') return 'text-slate-700';
+  const hex = hexColor.replace('#', '');
+  let fullHex = hex;
+  if (hex.length === 3) fullHex = hex.split('').map(c => c + c).join('');
+  if (fullHex.length !== 6) return 'text-slate-900'; 
+  const r = parseInt(fullHex.substring(0, 2), 16);
+  const g = parseInt(fullHex.substring(2, 4), 16);
+  const b = parseInt(fullHex.substring(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
+}
+
 export function FocusSummaryPin({ 
   pin, onUpdate, onDelete, onDragStart, isDragging, isDark, isLocked, isSelected, onSelect, dailyTotal 
 }: FocusSummaryPinProps) {
   const hours = Math.floor(dailyTotal / 3600);
   const minutes = Math.floor((dailyTotal % 3600) / 60);
+  const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
+  const defaultBg = isDark ? '#1a1a1a' : '#f8fafc';
+  const bgColor = pin.color || defaultBg;
+  const textColorClass = getContrastColor(bgColor);
 
   return (
     <Resizable
       size={{ width: pin.width, height: pin.height }}
       onResizeStop={(_e, _dir, _ref, d) => {
+        if (isLocked) return;
         onUpdate(pin.id, { width: pin.width + d.width, height: pin.height + d.height });
       }}
       minWidth={200}
@@ -38,31 +59,74 @@ export function FocusSummaryPin({
       }}
     >
       <motion.div
-        className={`w-full h-full flex flex-col p-6 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-2xl relative overflow-hidden ${isSelected ? 'ring-4 ring-white/50' : ''}`}
+        className={`w-full h-full flex flex-col rounded-3xl overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl scale-[1.02]' : ''}`}
         onClick={onSelect}
+        style={{
+          backgroundColor: bgColor,
+          boxShadow: isSelected ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 12px rgba(0,0,0,0.07)',
+          border: isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)',
+        }}
       >
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <Target className="w-24 h-24" />
+        {/* Pin Head */}
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+          <div
+            className="w-5 h-5 rounded-full shadow-md"
+            style={{ backgroundColor: pinHeadColor }}
+          />
+          <div
+            className="w-1.5 h-2 rounded-b-sm mx-auto"
+            style={{ backgroundColor: pinHeadColor, opacity: 0.6 }}
+          />
         </div>
 
-        <div className="flex items-center gap-2 mb-4">
-          <Timer className="w-4 h-4 text-indigo-100" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-100">Daily Focus</span>
-        </div>
-
-        <div className="flex-1 flex flex-col justify-center">
-          <div className="flex items-baseline gap-1">
-            <span className="text-4xl font-black tracking-tighter tabular-nums">{hours}h {minutes}m</span>
-          </div>
-          <p className="text-xs text-indigo-100 mt-1 font-medium">Focused today</p>
-        </div>
-
-        <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
+        {/* Header */}
+        <div
+          onMouseDown={(e) => {
+            if (isLocked) return;
+            e.preventDefault();
+            e.stopPropagation();
+            onDragStart(pin.id, e);
+          }}
+          className="flex items-center justify-between px-4 pt-4 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+          style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+        >
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-300" />
-            <span className="text-[10px] font-bold text-indigo-50">12% more than yesterday</span>
+            <GripVertical className="w-4 h-4 text-slate-400" />
+            <span className={`text-xs font-bold uppercase tracking-widest ${textColorClass}`}>Daily Focus</span>
+          </div>
+          {!isLocked && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
+              className={`w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors`}
+            >
+              <X className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+            </button>
+          )}
+        </div>
+
+        <div className="flex-1 flex flex-col justify-center px-6 pb-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className={`p-2 rounded-xl ${isDark ? 'bg-white/5' : 'bg-black/5'}`}>
+              <Timer className="w-5 h-5 text-indigo-500" />
+            </div>
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${textColorClass}`}>Focused Time</span>
+          </div>
+
+          <div className="flex items-baseline gap-1">
+            <span className={`text-4xl font-black tracking-tighter tabular-nums ${textColorClass}`}>
+              {hours}h <span className="text-xl opacity-60">{minutes}m</span>
+            </span>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between opacity-60">
+             <div className="flex items-center gap-1.5">
+               <Target className="w-3.5 h-3.5" />
+               <span className="text-[10px] font-bold uppercase tracking-widest">Active Tracking</span>
+             </div>
           </div>
         </div>
+
+        <div className="absolute -bottom-6 -right-6 h-24 w-24 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
       </motion.div>
     </Resizable>
   );

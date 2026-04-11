@@ -1,8 +1,9 @@
 import { motion } from 'motion/react';
 import { Resizable } from 're-resizable';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
-import { BarChart3, TrendingUp } from 'lucide-react';
+import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
+import { BarChart3, TrendingUp, GripVertical, X } from 'lucide-react';
 import { PinData } from './Pin';
+import { THEME_CONFIG } from '../theme-config';
 
 interface WeeklyAnalysisPinProps {
   pin: PinData;
@@ -17,13 +18,36 @@ interface WeeklyAnalysisPinProps {
   weeklyData: { day: string; hours: number }[];
 }
 
+const PIN_HEAD_COLORS: Record<string, string> = THEME_CONFIG.pinHeads;
+
+function getContrastColor(hexColor?: string) {
+  if (!hexColor || hexColor === 'transparent') return 'text-slate-700';
+  const hex = hexColor.replace('#', '');
+  let fullHex = hex;
+  if (hex.length === 3) fullHex = hex.split('').map(c => c + c).join('');
+  if (fullHex.length !== 6) return 'text-slate-900'; 
+  const r = parseInt(fullHex.substring(0, 2), 16);
+  const g = parseInt(fullHex.substring(2, 4), 16);
+  const b = parseInt(fullHex.substring(4, 6), 16);
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
+}
+
 export function WeeklyAnalysisPin({ 
   pin, onUpdate, onDelete, onDragStart, isDragging, isDark, isLocked, isSelected, onSelect, weeklyData 
 }: WeeklyAnalysisPinProps) {
+  const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
+  const defaultBg = isDark ? '#1a1a1a' : '#f8fafc';
+  const bgColor = pin.color || defaultBg;
+  const textColorClass = getContrastColor(bgColor);
+
+  const totalHours = weeklyData.reduce((acc, curr) => acc + curr.hours, 0).toFixed(1);
+
   return (
     <Resizable
       size={{ width: pin.width, height: pin.height }}
       onResizeStop={(_e, _dir, _ref, d) => {
+        if (isLocked) return;
         onUpdate(pin.id, { width: pin.width + d.width, height: pin.height + d.height });
       }}
       minWidth={300}
@@ -36,58 +60,98 @@ export function WeeklyAnalysisPin({
       }}
     >
       <motion.div
-        className={`w-full h-full flex flex-col p-6 rounded-3xl bg-white dark:bg-[#1a1a1a] shadow-2xl relative border border-slate-200 dark:border-white/5 ${isSelected ? 'ring-4 ring-indigo-500/50' : ''}`}
+        className={`w-full h-full flex flex-col rounded-3xl overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl scale-[1.02]' : ''}`}
         onClick={onSelect}
+        style={{
+          backgroundColor: bgColor,
+          boxShadow: isSelected ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 12px rgba(0,0,0,0.07)',
+          border: isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)',
+        }}
       >
-        <div className="flex items-center justify-between mb-6">
+        {/* Pin Head */}
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+          <div
+            className="w-5 h-5 rounded-full shadow-md"
+            style={{ backgroundColor: pinHeadColor }}
+          />
+          <div
+            className="w-1.5 h-2 rounded-b-sm mx-auto"
+            style={{ backgroundColor: pinHeadColor, opacity: 0.6 }}
+          />
+        </div>
+
+        {/* Header */}
+        <div
+          onMouseDown={(e) => {
+            if (isLocked) return;
+            e.preventDefault();
+            e.stopPropagation();
+            onDragStart(pin.id, e);
+          }}
+          className="flex items-center justify-between px-4 pt-4 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+          style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+        >
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-indigo-500" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Weekly Performance</span>
+            <GripVertical className="w-4 h-4 text-slate-400" />
+            <span className={`text-xs font-bold uppercase tracking-widest ${textColorClass}`}>Focus Analytics</span>
           </div>
-          <div className="flex items-center gap-2 bg-emerald-500/10 px-2 py-1 rounded-md">
-            <TrendingUp className="w-3 h-3 text-emerald-500" />
-            <span className="text-[10px] font-bold text-emerald-500">+1.2h</span>
-          </div>
+          {!isLocked && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
+              className={`w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors`}
+            >
+              <X className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+            </button>
+          )}
         </div>
 
-        <div className="flex-1 w-full min-h-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weeklyData}>
-              <XAxis 
-                dataKey="day" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fontSize: 10, fill: '#94a3b8' }}
-                dy={10}
-              />
-              <Tooltip 
-                cursor={{ fill: 'transparent' }}
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="bg-slate-900 text-white px-3 py-2 rounded-xl text-[10px] font-bold shadow-2xl border border-white/10">
-                        {payload[0].value} hours
-                      </div>
-                    );
-                  }
-                  return null;
-                }}
-              />
-              <Bar dataKey="hours" radius={[6, 6, 6, 6]} barSize={24}>
-                {weeklyData.map((_entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={index === weeklyData.length - 1 ? '#6366f1' : (isDark ? '#334155' : '#e2e8f0')} 
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <div className="flex-1 flex flex-col p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-indigo-500" />
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${textColorClass}`}>Weekly Performance</span>
+            </div>
+          </div>
 
-        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-white/5 flex items-center justify-between">
-          <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">Total this week</span>
-          <span className="text-sm font-black text-slate-700 dark:text-slate-200">22.5 Hours</span>
+          <div className="flex-1 w-full min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyData}>
+                <XAxis 
+                  dataKey="day" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fill: isDark ? '#94a3b8' : '#64748b' }}
+                  dy={10}
+                />
+                <Tooltip 
+                  cursor={{ fill: 'transparent' }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-slate-900 text-white px-3 py-2 rounded-xl text-[10px] font-bold shadow-2xl border border-white/10">
+                          {payload[0].value} hours
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="hours" radius={[6, 6, 6, 6]} barSize={24}>
+                  {weeklyData.map((_entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={index === weeklyData.length - 1 ? '#6366f1' : (isDark ? '#334155' : '#e2e8f0')} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className={`mt-6 pt-4 border-t ${isDark ? 'border-white/5' : 'border-slate-100'} flex items-center justify-between`}>
+            <span className={`text-[10px] font-bold uppercase tracking-widest opacity-40 ${textColorClass}`}>Total Focus</span>
+            <span className={`text-sm font-black ${textColorClass}`}>{totalHours} Hours</span>
+          </div>
         </div>
       </motion.div>
     </Resizable>

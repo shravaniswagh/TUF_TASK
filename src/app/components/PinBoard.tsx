@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -74,18 +74,29 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [dragging, setDragging] = useState<DragState | null>(null);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
   const [activeFocusTaskId, setActiveFocusTaskId] = useState<string | null>(null);
+  const [focusHistory, setFocusHistory] = useState<Record<string, number>>({});
   const boardRef = useRef<HTMLDivElement>(null);
 
-  // Simulated Weekly Data - In a real app this would come from analytics/logs
-  const [weeklyData] = useState([
-    { day: 'Mon', hours: 4.2 },
-    { day: 'Tue', hours: 3.8 },
-    { day: 'Wed', hours: 5.1 },
-    { day: 'Thu', hours: 2.9 },
-    { day: 'Fri', hours: 4.5 },
-    { day: 'Sat', hours: 1.2 },
-    { day: 'Sun', hours: 0.8 },
-  ]);
+  // Derive weekly data from real focus history
+  const weeklyData = useMemo(() => {
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      result.push({
+        day: days[d.getDay()],
+        hours: Number(((focusHistory[dateStr] || 0) / 3600).toFixed(1))
+      });
+    }
+    return result;
+  }, [focusHistory]);
+
+  const dailyTotal = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return focusHistory[today] || 0;
+  }, [focusHistory]);
   const [copied, setCopied] = useState(false);
   const prevBoardIdRef = useRef(boardId);
   const [isLocked, setIsLocked] = useState(() => {
@@ -154,6 +165,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
           if (data.isLocked !== undefined) {
             setIsLocked(data.isLocked);
           }
+          if (data.focusHistory) {
+            setFocusHistory(data.focusHistory);
+          }
         }
         setHasLoaded(true);
       } catch (err) {
@@ -179,10 +193,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
         theme: manualTheme, // Save forced theme to database
         isLocked: isLocked, // Save lock state to database
         lastUpdated: new Date().toISOString(),
+        focusHistory: focusHistory, // Save focus history to database
       }, { merge: true }).catch(console.error);
     }, 1200);
     return () => clearTimeout(timer);
-  }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked]);
+  }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked, focusHistory]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
   const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
@@ -321,6 +336,13 @@ export function PinBoard({ boardId }: { boardId: string }) {
                     return t ? t.text : null;
                   } catch(e) { return null; }
                 })() : null}
+              onFocusIncrement={() => {
+                const today = new Date().toISOString().split('T')[0];
+                setFocusHistory(prev => ({
+                  ...prev,
+                  [today]: (prev[today] || 0) + 1
+                }));
+              }}
               onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
           );
         } else if (pin.type === 'focus-summary') {
@@ -330,7 +352,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
               isLocked={isLocked}
               isSelected={selectedPinId === pin.id}
               onSelect={() => setSelectedPinId(pin.id)}
-              dailyTotal={pins.find(p => p.type === 'stopwatch')?.totalSeconds || 0}
+              dailyTotal={dailyTotal}
               onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
           );
         } else if (pin.type === 'weekly-analysis') {

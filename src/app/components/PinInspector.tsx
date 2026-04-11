@@ -113,8 +113,8 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
               </div>
             </div>
 
-            {/* Text Color (Notes/Todo/Countdown) */}
-            {(['note', 'todo', 'countdown', 'clock'].includes(pin.type)) && (
+            {/* Text Color (Notes/Todo/Countdown/Focus) */}
+            {(['note', 'todo', 'countdown', 'clock', 'stopwatch', 'focus-summary', 'weekly-analysis'].includes(pin.type)) && (
               <div>
                 <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 block">Text Accent</label>
                 <div className="flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
         </Section>
 
         {/* Typography Section */}
-        {(['note', 'todo', 'countdown', 'clock'].includes(pin.type)) && (
+        {(['note', 'todo', 'countdown', 'clock', 'stopwatch', 'focus-summary', 'weekly-analysis'].includes(pin.type)) && (
           <Section title="Typography" icon={Type}>
             <div className="space-y-4">
               <div>
