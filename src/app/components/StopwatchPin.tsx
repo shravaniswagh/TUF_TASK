@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Resizable } from 're-resizable';
 import { X, GripVertical, Play, Pause, RotateCcw, Maximize2, Minimize2, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -39,105 +39,50 @@ function getContrastColor(hexColor?: string) {
   return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
 }
 
-/**
- * Liquid Sliding Digit Component
- */
-const LiquidDigit = ({ value, isFullscreen, textColor, fontFamily, scale = 1 }: { 
-  value: number; 
-  isFullscreen?: boolean;
-  textColor: string;
-  fontFamily: string;
-  scale?: number;
-}) => {
-  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-  const size = isFullscreen ? 160 : (48 * scale);
-  const height = isFullscreen ? 180 : (60 * scale);
-
-  return (
-    <div 
-      className="relative overflow-hidden flex items-center justify-center font-black tabular-nums tracking-tighter"
-      style={{ 
-        width: size, 
-        height: height,
-        fontSize: size,
-        fontFamily 
-      }}
-    >
-      <motion.div
-        animate={{ y: -value * height }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
-        className="absolute top-0 flex flex-col items-center"
-      >
-        {digits.map(d => (
-          <div key={d} style={{ height, color: textColor }} className="flex items-center justify-center">
-            {d}
-          </div>
-        ))}
-      </motion.div>
-    </div>
-  );
-};
-
-const DigitalUnit = ({ value, label, isFullscreen, textColor, fontFamily, scale = 1 }: { 
-  value: number; 
-  label: string; 
-  isFullscreen?: boolean;
-  textColor: string;
-  fontFamily: string;
-  scale?: number;
-}) => {
-  const tens = Math.floor(value / 10);
-  const ones = value % 10;
-
-  return (
-    <div className={`flex flex-col items-center gap-1 ${isFullscreen ? 'sm:gap-4' : ''}`}>
-      <div className="flex">
-        <LiquidDigit value={tens} isFullscreen={isFullscreen} textColor={textColor} fontFamily={fontFamily} scale={scale} />
-        <LiquidDigit value={ones} isFullscreen={isFullscreen} textColor={textColor} fontFamily={fontFamily} scale={scale} />
-      </div>
-      <span className={`font-black uppercase tracking-[0.3em] opacity-30 ${isFullscreen ? 'text-lg mt-4' : 'text-[7px]'}`} 
-            style={{ color: textColor, fontSize: isFullscreen ? undefined : (8 * scale) }}>{label}</span>
-    </div>
-  );
-};
+function formatTime(totalSeconds: number) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return [
+    h > 0 ? h.toString().padStart(2, '0') : null,
+    m.toString().padStart(2, '0'),
+    s.toString().padStart(2, '0')
+  ].filter(Boolean).join(':');
+}
 
 export function StopwatchPin({ 
   pin, onUpdate, onDelete, onDragStart, onOpenInspector, onToggleFullscreen, isFullscreen = false, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement 
 }: StopwatchPinProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [seconds, setSeconds] = useState(pin.totalSeconds || 0);
-  const [isActive, setIsActive] = useState(!pin.isPaused);
+  const [localSeconds, setLocalSeconds] = useState(pin.totalSeconds || 0);
   
+  // Keep local seconds in sync with external updates (like reset)
+  useEffect(() => {
+    setLocalSeconds(pin.totalSeconds || 0);
+  }, [pin.totalSeconds]);
+
   useEffect(() => {
     let interval: any;
-    if (isActive && !pin.isPaused) {
+    if (!pin.isPaused) {
       interval = setInterval(() => {
-        setSeconds(s => {
+        setLocalSeconds(s => {
           const next = s + 1;
           onUpdate(pin.id, { totalSeconds: next });
           onFocusIncrement?.();
           return next;
         });
       }, 1000);
-    } else {
-      clearInterval(interval);
     }
     return () => clearInterval(interval);
-  }, [isActive, pin.isPaused, pin.id, onUpdate, onFocusIncrement]);
-
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
+  }, [pin.isPaused, pin.id, onUpdate, onFocusIncrement]);
 
   const handleToggle = () => {
     onUpdate(pin.id, { isPaused: !pin.isPaused });
-    setIsActive(!pin.isPaused);
   };
 
   const handleReset = () => {
     onUpdate(pin.id, { totalSeconds: 0, isPaused: true });
-    setSeconds(0);
-    setIsActive(false);
+    setLocalSeconds(0);
   };
 
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
@@ -148,13 +93,8 @@ export function StopwatchPin({
   const clockTextColor = pin.textColor || (textColorClass.includes('slate-50') ? '#ffffff' : '#1e293b');
   const customFont = pin.fontFamily || 'Inter, system-ui, sans-serif';
 
-  // Responsive scaling factor
-  const scale = isFullscreen ? 1 : Math.min(pin.width / 400, pin.height / 300) * 1.5;
-
-  // Progress Ring Logic
-  const progress = (seconds % 3600) / 3600;
-  const radius = isFullscreen ? 400 : 160;
-  const circumference = 2 * Math.PI * radius;
+  // Responsive scaling factor - based on clock style
+  const timeFontSize = isFullscreen ? 'text-9xl' : (pin.width > 300 ? 'text-6xl' : 'text-4xl');
 
   return (
     <div
@@ -191,15 +131,7 @@ export function StopwatchPin({
             border: isFullscreen ? 'none' : (isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)'),
           }}
         >
-          {isFullscreen ? (
-            /* Minimize Button - Top Right Immersive */
-            <button 
-              onClick={() => onToggleFullscreen?.(false)}
-              className="absolute top-10 right-10 w-12 h-12 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/10 backdrop-blur-xl z-[10001] group"
-            >
-              <Minimize2 className="w-5 h-5 text-white opacity-40 group-hover:opacity-100 transition-opacity" />
-            </button>
-          ) : (
+          {!isFullscreen && (
             <>
               {/* Pin Head */}
               <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
@@ -215,7 +147,7 @@ export function StopwatchPin({
                   e.stopPropagation();
                   onDragStart(pin.id, e);
                 }}
-                className="flex items-center justify-between px-5 pt-5 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+                className="flex items-center justify-between px-5 pt-5 pb-0 cursor-grab active:cursor-grabbing shrink-0"
               >
                 <div className="flex items-center gap-2">
                   <GripVertical className="w-4 h-4 text-slate-400" />
@@ -254,54 +186,51 @@ export function StopwatchPin({
             </>
           )}
 
-          {/* Main Display Content */}
-          <div className="flex-1 flex flex-col items-center justify-center relative p-6">
-            {/* Background Focus Ring */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 overflow-hidden">
-               <svg className={`transform -rotate-90 ${isFullscreen ? 'w-[120vh] h-[120vh]' : 'w-[200%] h-[200%]'}`} viewBox="0 0 1000 1000">
-                  <circle
-                    cx="500" cy="500" r={radius}
-                    fill="none"
-                    stroke={clockTextColor}
-                    strokeWidth={isFullscreen ? "1" : "2"}
-                    strokeDasharray={circumference}
-                    strokeDashoffset={circumference * (1 - progress)}
-                    className="transition-all duration-1000 ease-linear"
-                  />
-               </svg>
+          {/* Main Display Content - Matching Clock Layout */}
+          <div className="flex-1 flex flex-col items-center justify-center relative -mt-2">
+            {isFullscreen && (
+               <button 
+                  onClick={() => onToggleFullscreen?.(false)}
+                  className="absolute top-10 right-10 w-12 h-12 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/10 backdrop-blur-xl z-[10001] group"
+                >
+                  <Minimize2 className="w-5 h-5 text-white opacity-40 group-hover:opacity-100 transition-opacity" />
+               </button>
+            )}
+
+            <div 
+               className={`${timeFontSize} font-black tracking-tighter tabular-nums`}
+               style={{ color: clockTextColor, fontFamily: customFont }}
+            >
+              {formatTime(localSeconds)}
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-4 z-10">
-              <DigitalUnit value={h} label="Hr" isFullscreen={isFullscreen} textColor={clockTextColor} fontFamily={customFont} scale={scale} />
-              <div className={`font-black opacity-20 ${isFullscreen ? 'text-9xl -mt-8' : '-mt-4'}`} style={{ color: clockTextColor, fontSize: isFullscreen ? undefined : (32 * scale) }}>:</div>
-              <DigitalUnit value={m} label="Min" isFullscreen={isFullscreen} textColor={clockTextColor} fontFamily={customFont} scale={scale} />
-              <div className={`font-black opacity-20 ${isFullscreen ? 'text-9xl -mt-8' : '-mt-4'}`} style={{ color: clockTextColor, fontSize: isFullscreen ? undefined : (32 * scale) }}>:</div>
-              <DigitalUnit value={s} label="Sec" isFullscreen={isFullscreen} textColor={clockTextColor} fontFamily={customFont} scale={scale} />
-            </div>
-
-            {/* Distraction-Free Controls */}
-            <div className={`flex items-center z-10 transition-all duration-500 ${isFullscreen ? 'mt-24 gap-10' : 'mt-4 gap-4'}`}>
+            {/* Controls - Replacing the Date area of clock */}
+            <div className={`flex items-center gap-6 mt-4 opacity-50 hover:opacity-100 transition-opacity z-10`}>
               <button
                 onClick={(e) => { e.stopPropagation(); handleReset(); }}
-                className={`flex items-center justify-center rounded-full transition-all border border-white/5 shadow-lg active:scale-95 ${isFullscreen ? 'w-16 h-16 bg-white/5 hover:bg-white/10' : 'w-7 h-7 bg-black/5 hover:bg-black/10'}`}
+                className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
                 style={{ color: clockTextColor }}
+                title="Reset"
               >
-                <RotateCcw className={isFullscreen ? "w-6 h-6" : "w-3 h-3"} />
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
+                   <RotateCcw className={isFullscreen ? "w-8 h-8" : "w-5 h-5"} />
+                </div>
               </button>
 
               <button
                 onClick={(e) => { e.stopPropagation(); handleToggle(); }}
-                className={`flex items-center justify-center rounded-full transition-all shadow-[0_20px_40px_rgba(0,0,0,0.3)] border border-white/10 active:scale-90 ${isFullscreen ? 'w-32 h-32 bg-white text-black hover:scale-105' : 'w-10 h-10 bg-indigo-500 text-white hover:bg-indigo-600'}`}
-                style={isFullscreen ? {} : { backgroundColor: pinHeadColor }}
+                className={`flex items-center justify-center transition-all hover:scale-110 active:scale-90`}
+                style={{ color: clockTextColor }}
+                title={pin.isPaused ? "Play" : "Pause"}
               >
-                {isActive && !pin.isPaused ? (
-                  <Pause className={isFullscreen ? "w-12 h-12" : "w-5 h-5"} fill="currentColor" />
-                ) : (
-                  <Play className={isFullscreen ? "w-12 h-12" : "w-5 h-5 ml-1"} fill="currentColor" />
-                )}
+                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-black/5 hover:bg-black/10">
+                   {pin.isPaused ? (
+                     <Play className={isFullscreen ? "w-10 h-10 ml-1.5" : "w-6 h-6 ml-1"} fill="currentColor" />
+                   ) : (
+                     <Pause className={isFullscreen ? "w-10 h-10" : "w-6 h-6"} fill="currentColor" />
+                   )}
+                </div>
               </button>
-
-              {!isFullscreen && <div className="w-7" />} {/* Spacing logic */}
             </div>
 
             {isFullscreen && activeTaskName && (
@@ -310,8 +239,8 @@ export function StopwatchPin({
                 animate={{ opacity: 1, y: 0 }}
                 className="absolute bottom-20 text-center"
               >
-                <p className="text-white/30 uppercase font-black tracking-[0.4em] text-xs mb-2">Currently Focusing On</p>
-                <h2 className="text-white text-3xl font-black">{activeTaskName}</h2>
+                <p className="text-white/30 uppercase font-black tracking-[0.4em] text-xs mb-2">Focusing On</p>
+                <h2 className="text-white text-3xl font-black tracking-tight">{activeTaskName}</h2>
               </motion.div>
             )}
           </div>
