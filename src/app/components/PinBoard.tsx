@@ -286,33 +286,15 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, [doSave]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
-  const onDragStart = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
+  const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
     if (isLocked) return;
     const pin = pins.find(p => p.id === id);
     if (!pin) return;
-    
-    // Extract coordinates based on event type
-    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
-    
-    setDragging({ id, offsetX: clientX - pin.x, offsetY: clientY - pin.y });
+    setDragging({ id, offsetX: e.clientX - pin.x, offsetY: e.clientY - pin.y });
   }, [pins, isLocked]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragging || isLocked) return;
-    moveAt(e.clientX, e.clientY);
-  }, [dragging, isLocked]);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!dragging || isLocked) return;
-    // Prevent scrolling while dragging on touch devices
-    if (e.cancelable) e.preventDefault();
-    const touch = e.touches[0];
-    moveAt(touch.clientX, touch.clientY);
-  }, [dragging, isLocked]);
-
-  const moveAt = (clientX: number, clientY: number) => {
-    if (!dragging) return;
     localLastUpdatedRef.current = Date.now();
     setPins(prev => {
       const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -320,8 +302,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
       const next = prev.map(p => {
         if (p.id === dragging.id) {
-          let newX = clientX - dragging.offsetX;
-          let newY = clientY - dragging.offsetY;
+          let newX = e.clientX - dragging.offsetX;
+          let newY = e.clientY - dragging.offsetY;
           
           // Clamp to screen boundaries
           newX = Math.max(0, Math.min(newX, screenWidth - p.width));
@@ -334,9 +316,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
       masterStateRef.current.pins = next;
       return next;
     });
-  };
+  }, [dragging, isLocked]);
 
-  const handleDragEnd = useCallback(() => {
+  const handleMouseUp = useCallback(() => {
     if (dragging) {
       setTimeout(doSave, 0);
     }
@@ -524,11 +506,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
     <div
       ref={boardRef}
       onMouseMove={handleMouseMove}
-      onMouseUp={handleDragEnd}
-      onMouseLeave={handleDragEnd}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleDragEnd}
-      onTouchCancel={handleDragEnd}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
       onClick={(e) => {
         // Click background to deselect
         if (e.target === boardRef.current) {

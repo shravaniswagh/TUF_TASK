@@ -28,7 +28,7 @@ interface CalendarPinProps {
   boardId: string;
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
-  onDragStart: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+  onDragStart: (id: string, e: React.MouseEvent) => void;
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
@@ -143,12 +143,7 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
               e.stopPropagation();
               onDragStart(pin.id, e);
             }}
-            onTouchStart={(e) => {
-              if (isLocked) return;
-              e.stopPropagation();
-              onDragStart(pin.id, e);
-            }}
-            className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow touch-none"
+            className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
             <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
             <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>Calendar</span>
