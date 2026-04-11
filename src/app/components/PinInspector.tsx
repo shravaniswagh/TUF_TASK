@@ -71,28 +71,29 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 380, opacity: 0 }}
       transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-      className="fixed top-6 right-6 bottom-6 w-[340px] bg-white/70 dark:bg-slate-900/70 backdrop-blur-[30px] rounded-[40px] shadow-[0_32px_128px_rgba(0,0,0,0.15)] border border-white/40 dark:border-slate-800/40 z-[2147483647] flex flex-col overflow-hidden"
+      className="fixed top-0 right-0 bottom-0 w-[350px] bg-white/70 dark:bg-slate-900/70 backdrop-blur-[32px] shadow-[-32px_0_64px_rgba(0,0,0,0.1)] border-l border-white/40 dark:border-slate-800/40 z-[2147483647] flex flex-col overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Header */}
-      <div className="p-8 border-b border-slate-100/50 dark:border-slate-800/50 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-4">
-           <div className="w-12 h-12 rounded-[20px] flex items-center justify-center shadow-inner" style={{ backgroundColor: accentColor + '20' }}>
-              <Settings2 className="w-6 h-6" style={{ color: accentColor }} />
+      {/* Floating Close Button */}
+      <button 
+        onClick={onClose}
+        className="absolute top-8 right-8 w-10 h-10 flex items-center justify-center bg-slate-100/50 dark:bg-slate-800/50 hover:bg-rose-500 hover:text-white rounded-[15px] transition-all transform hover:rotate-90 z-20 backdrop-blur-md"
+      >
+        <X className="w-5 h-5" />
+      </button>
+
+      {/* Header Info (Aesthetic Only, No Sidebar Look) */}
+      <div className="p-10 pb-4 shrink-0">
+        <div className="flex items-center gap-4 opacity-40">
+           <div className="w-10 h-10 rounded-[14px] flex items-center justify-center border border-slate-200" style={{ backgroundColor: accentColor + '10' }}>
+              <Settings2 className="w-5 h-5" style={{ color: accentColor }} />
            </div>
            <div>
-              <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight leading-none mb-1.5">Settings</h2>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-[0.1em]">
-                {pin.type.replace('-', ' ')}
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-black tracking-[0.2em]">
+                Editing {pin.type.replace('-', ' ')}
               </p>
            </div>
         </div>
-        <button 
-          onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-rose-500 hover:text-white rounded-[15px] transition-all transform hover:rotate-90"
-        >
-          <X className="w-5 h-5" />
-        </button>
       </div>
 
       {/* Scrollable Content */}
@@ -168,15 +169,15 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2.5 block px-1 uppercase tracking-wide">Accent</label>
-                    <div className="flex gap-1.5">
-                        {TEXT_COLORS.slice(0, 4).map(c => (
+                   <div className="grid grid-cols-6 gap-2">
+                        {THEME_CONFIG.pinPalette.map(color => (
                            <button 
-                             key={c.name} 
-                             onClick={() => handleUpdate({ textColor: c.value })}
-                             className={`w-10 h-10 rounded-2xl border-2 flex items-center justify-center transition-all ${pin.textColor === c.value ? 'border-slate-900 shadow-md scale-105' : 'border-slate-100 dark:border-slate-800'}`}
-                             style={{ color: c.value || (isDark ? '#fff' : '#000') }}
+                             key={color} 
+                             onClick={() => handleUpdate({ textColor: color })}
+                             className={`aspect-square rounded-[10px] border-2 flex items-center justify-center transition-all ${pin.textColor === color ? 'border-slate-900 shadow-md scale-105' : 'border-black/5 hover:border-black/20'}`}
+                             style={{ backgroundColor: color }}
                            >
-                              <Type className="w-4 h-4" />
+                              <Type className="w-3.5 h-3.5 mix-blend-difference invert opacity-60" />
                            </button>
                         ))}
                     </div>

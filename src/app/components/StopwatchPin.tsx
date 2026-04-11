@@ -62,7 +62,7 @@ const FlipCard = ({ current, next, isFullscreen, itemColor, textColor, fontFamil
   }, [next, displayNext]);
 
   const sizeClass = isFullscreen ? 'w-48 h-64 text-8xl' : 'w-20 h-28 text-5xl';
-  const radiusClass = isFullscreen ? 'rounded-[32px]' : 'rounded-2xl';
+  const radiusClass = isFullscreen ? 'rounded-[32px]' : 'rounded-xl';
 
   return (
     <div className={`relative ${sizeClass} perspective-1000`} style={{ fontFamily }}>
@@ -211,7 +211,7 @@ export function StopwatchPin({
       }}
     >
       <motion.div
-        className={`w-full h-full flex flex-col rounded-[32px] overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''}`}
+        className={`w-full h-full flex flex-col rounded-xl overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''}`}
         onClick={onSelect}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
