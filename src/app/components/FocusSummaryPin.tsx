@@ -93,10 +93,11 @@ export function FocusSummaryPin({
         <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
 
         {/* Header */}
-        <div
-          className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0"
-          style={{ backgroundColor: textColorClass === 'text-slate-600' ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.08)' }}
-        >
+          <div
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 bg-black/[0.03] transition-colors"
+          >
           <div 
             onMouseDown={(e) => {
               if (isLocked) return;
@@ -115,20 +116,20 @@ export function FocusSummaryPin({
                 <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="flex gap-1">
                   <button
                     onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
-                    className={`w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-black/10 transition-all`}
-                  >
-                    <Settings2 className={`w-3.5 h-3.5 ${textColorClass === 'text-white' ? 'text-white' : 'text-slate-600'}`} />
-                  </button>
+                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/10 hover:bg-black/20 transition-all shadow-sm border border-black/5"
+                 >
+                   <Settings2 className={`w-3.5 h-3.5 ${textColorClass}`} />
+                 </button>
                 </motion.div>
               )}
             </AnimatePresence>
             {!isLocked && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
-                className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${textColorClass === 'text-white' ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
-              >
-                <X className={`w-3.5 h-3.5 ${textColorClass === 'text-white' ? 'text-white' : 'text-slate-500'}`} />
-              </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
+                  className={`w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-black/5 group`}
+                >
+                  <X className={`w-3.5 h-3.5 ${textColorClass} group-hover:text-white`} />
+                </button>
             )}
           </div>
         </div>

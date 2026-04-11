@@ -151,6 +151,8 @@ export function StopwatchPin({
         className="w-full h-full"
       >
         <motion.div
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => { setIsHovered(false); setShowTaskSelector(false); }}
           className={`w-full h-full flex flex-col relative transition-all duration-500 ${isSelected ? 'shadow-2xl' : ''} ${isDragging ? 'opacity-50' : ''} ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}
           onClick={() => {
             if (!isFullscreen) {
@@ -158,8 +160,6 @@ export function StopwatchPin({
               onBringToFront(pin.id);
             }
           }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => { setIsHovered(false); setShowTaskSelector(false); }}
           style={{
             backgroundColor: bgColor,
             boxShadow: isFullscreen ? 'none' : (isSelected ? '0 32px 64px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.07)'),
@@ -176,8 +176,9 @@ export function StopwatchPin({
           <div className={`w-full h-full flex flex-col overflow-hidden ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}>
             {!isFullscreen && (
                 <div
-                  className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0"
-                  style={{ backgroundColor: clockTextColor === '#ffffff' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                  className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 bg-black/[0.03] transition-colors"
                 >
                   <div 
                     onMouseDown={(e) => {

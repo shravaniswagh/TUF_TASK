@@ -12,12 +12,13 @@ interface Note {
   text: string;
   dateRange: DateRange;
   monthYear: string;
+  color?: string;
 }
 
 interface NotesSectionProps {
   notes: Note[];
   selectedRange: DateRange;
-  onAddNote: (text: string) => void;
+  onAddNote: (text: string, color?: string) => void;
   onDeleteNote: (id: string) => void;
   scrollbarColor?: string;
   isDark: boolean;
@@ -32,12 +33,13 @@ export function NotesSection({
   isDark,
 }: NotesSectionProps) {
   const [noteText, setNoteText] = useState('');
+  const [selectedColor, setSelectedColor] = useState('#6366f1');
   const [isAdding, setIsAdding] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (noteText.trim()) {
-      onAddNote(noteText);
+      onAddNote(noteText, selectedColor);
       setNoteText('');
       setIsAdding(false);
     }
@@ -109,24 +111,37 @@ export function NotesSection({
               rows={3}
               autoFocus
             />
-            <div className="flex gap-2 mt-2">
-              <button
-                type="submit"
-                disabled={!noteText.trim()}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Add Note
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsAdding(false);
-                  setNoteText('');
-                }}
-                className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors"
-              >
-                Cancel
-              </button>
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex gap-2">
+                {['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#0ea5e9'].map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setSelectedColor(c)}
+                    className={`w-4 h-4 rounded-full transition-all ${selectedColor === c ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' : 'hover:scale-110'}`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={!noteText.trim()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Add Note
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAdding(false);
+                    setNoteText('');
+                  }}
+                  className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </motion.form>
         )}
@@ -167,6 +182,7 @@ export function NotesSection({
                 exit={{ opacity: 0, x: 20 }}
                 layout
                 className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow group"
+                style={{ borderLeft: note.color ? `4px solid ${note.color}` : 'none' }}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 text-xs text-slate-500">

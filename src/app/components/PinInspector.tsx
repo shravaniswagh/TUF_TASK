@@ -125,6 +125,27 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
           </div>
         </Section>
 
+        {/* To-Do Settings */}
+        {pin.type === 'todo' && (
+          <Section title="Task Settings" icon={Settings2}>
+             <button
+               onClick={() => handleUpdate({ syncCalendarEvents: !pin.syncCalendarEvents })}
+               className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between ${pin.syncCalendarEvents ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}
+             >
+               <div className="flex flex-col items-start gap-0.5">
+                 <span className={`text-[11px] font-bold ${pin.syncCalendarEvents ? 'text-emerald-700' : 'text-slate-600 dark:text-slate-300'}`}>Sync Calendar Events</span>
+                 <span className="text-[9px] text-slate-400">Add today's calendar notes to list</span>
+               </div>
+               <div className={`w-10 h-5 rounded-full relative transition-colors ${pin.syncCalendarEvents ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                 <motion.div 
+                   animate={{ x: pin.syncCalendarEvents ? 22 : 2 }}
+                   className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm"
+                 />
+               </div>
+             </button>
+          </Section>
+        )}
+
         {/* Typography */}
         {(['note', 'todo', 'countdown', 'clock', 'stopwatch', 'focus-summary', 'weekly-analysis'].includes(pin.type)) && (
           <Section title="Typography" icon={Type}>

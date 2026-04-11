@@ -28,6 +28,7 @@ export interface PinData {
   isPaused?: boolean;
   totalSeconds?: number;
   itemColor?: string;
+  syncCalendarEvents?: boolean;
 }
 
 interface PinProps {
@@ -51,6 +52,7 @@ interface TodoItem {
   id: string;
   text: string;
   completed: boolean;
+  color?: string;
 }
 
 const PIN_HEAD_COLORS: Record<string, string> = THEME_CONFIG.pinHeads;
@@ -165,7 +167,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
 
   // Daily Tasks sync logic
   useEffect(() => {
-    if (pin.type === 'daily-tasks') {
+    if (pin.type === 'daily-tasks' || (pin.type === 'todo' && pin.syncCalendarEvents)) {
       // Use Firestore listener instead of localStorage
       const unsubscribe = onSnapshot(doc(db, 'notes', boardId), (docSnap) => {
         if (docSnap.exists()) {
@@ -202,7 +204,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
 
       return () => unsubscribe();
     }
-  }, [pin.type, boardId]);
+  }, [pin.type, pin.syncCalendarEvents, boardId]);
 
   const handleNoteSave = () => {
     onUpdate(pin.id, { content: noteContent });
@@ -354,8 +356,9 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
         <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
           {/* Pin Header */}
           <div
-            className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0"
-            style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 bg-black/[0.03] transition-colors"
           >
           <div 
             onMouseDown={(e) => {
@@ -383,7 +386,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                     e.stopPropagation();
                     onOpenInspector?.(pin.id);
                   }}
-                  className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${textColorClass.includes('slate-50') ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
+                  className={`w-7 h-7 flex items-center justify-center rounded-xl bg-black/10 hover:bg-black/20 shadow-sm border border-black/5 transition-all`}
                 >
                   <Settings2 className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
                 </motion.button>
@@ -396,9 +399,9 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                   e.stopPropagation();
                   onDelete(pin.id);
                 }}
-                className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${textColorClass.includes('slate-50') ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
+                className={`w-7 h-7 flex items-center justify-center rounded-xl bg-black/5 hover:bg-rose-500 hover:text-white shadow-sm border border-black/5 transition-all group`}
               >
-                <X className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+                <X className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'} group-hover:text-white`} />
               </button>
             )}
           </div>
@@ -591,13 +594,28 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
               <div className="flex-1 overflow-auto space-y-1.5 pr-1 custom-scrollbar">
                 {todos.map(todo => (
                   <div key={todo.id} className="flex items-center gap-2 group bg-white/30 hover:bg-white/50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-black/5">
-                    <button
-                      onMouseDown={e => e.stopPropagation()}
-                      onClick={() => toggleTodo(todo.id)}
-                      className={`flex-shrink-0 transition-colors ${todo.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-400'}`}
-                    >
-                      {todo.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
-                    </button>
+                    <div className="flex flex-col gap-1 items-center">
+                      <button
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={() => toggleTodo(todo.id)}
+                        className={`flex-shrink-0 transition-colors ${todo.completed ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-400'}`}
+                      >
+                        {todo.completed ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5" />}
+                      </button>
+                      <div className="flex gap-0.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {['#6366f1', '#10b981', '#f43f5e', '#f59e0b', '#0ea5e9'].map(c => (
+                          <button
+                            key={c}
+                            onClick={() => {
+                              const updated = todos.map(t => t.id === todo.id ? { ...t, color: c } : t);
+                              onUpdate(pin.id, { content: JSON.stringify(updated) });
+                            }}
+                            className={`w-2 h-2 rounded-full transition-transform hover:scale-125 ${todo.color === c ? 'ring-1 ring-offset-1 ring-slate-400' : ''}`}
+                            style={{ backgroundColor: c }}
+                          />
+                        ))}
+                      </div>
+                    </div>
                     <button
                       onMouseDown={e => e.stopPropagation()}
                       onClick={() => onStartFocus?.(todo.id)}
@@ -610,7 +628,9 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                       style={{ 
                         color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#F1F5F9' : '#1E293B'),
                         fontFamily: pin.fontFamily || 'system-ui',
-                        fontSize: pin.fontSize || '14px'
+                        fontSize: pin.fontSize || '14px',
+                        borderLeft: todo.color ? `3px solid ${todo.color}` : 'none',
+                        paddingLeft: todo.color ? '8px' : '0'
                       }}
                     >
                       {todo.text}
@@ -624,7 +644,31 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
                     </button>
                   </div>
                 ))}
-                {todos.length === 0 && (
+
+                {pin.syncCalendarEvents && dailyNotes.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-black/5">
+                    <div className="flex items-center gap-1.5 mb-2.5 opacity-40">
+                      <ClipboardList className="w-3 h-3" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Today's Calendar Focus</span>
+                    </div>
+                    <div className="space-y-2">
+                       {dailyNotes.map(note => (
+                         <div key={note.id} className="flex items-center gap-2 bg-white/20 p-2 rounded-lg border border-transparent">
+                            <div className="w-1 h-3 rounded-full" style={{ backgroundColor: note.color || '#rose-400' }} />
+                            <span 
+                              className="text-xs font-semibold flex-1 leading-snug"
+                              style={{ color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#F1F5F9' : '#475569') }}
+                            >
+                              {note.text}
+                            </span>
+                            <div className="px-1.5 py-0.5 rounded-md bg-white/50 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Synced</div>
+                         </div>
+                       ))}
+                    </div>
+                  </div>
+                )}
+
+                {todos.length === 0 && (!pin.syncCalendarEvents || dailyNotes.length === 0) && (
                   <div className="h-full flex flex-col items-center justify-center gap-2 opacity-30 mt-4">
                     <ListTodo className="w-8 h-8" />
                     <span className="text-xs font-medium">No tasks yet</span>

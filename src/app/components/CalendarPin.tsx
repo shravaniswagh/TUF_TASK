@@ -132,8 +132,9 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
         <div className="w-full h-full flex flex-col overflow-hidden rounded-xl">
         {/* Drag Handle Header */}
           <div
-            className="flex items-center justify-between px-3 pt-3 pb-2 shrink-0 border-b border-black/5"
-            style={{ backgroundColor: textColorClass.includes('black') ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.08)' }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="flex items-center justify-between px-3 pt-3 pb-1 shrink-0 bg-black/[0.03] transition-colors"
           >
           <div 
             onMouseDown={(e) => {
@@ -142,8 +143,6 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
               e.stopPropagation();
               onDragStart(pin.id, e);
             }}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
             className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
           >
             <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
@@ -158,9 +157,9 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   onClick={(e) => { e.stopPropagation(); onOpenInspector?.(pin.id); }}
-                  className={`w-7 h-7 flex items-center justify-center rounded-xl bg-black/5 hover:bg-black/10 transition-all`}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/10 hover:bg-black/20 transition-all shadow-sm border border-black/5"
                 >
-                  <Settings2 className={`w-4 h-4 ${textColorClass}`} />
+                  <Settings2 className={`w-3.5 h-3.5 ${textColorClass}`} />
                 </motion.button>
               )}
             </AnimatePresence>
@@ -170,10 +169,10 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
                   e.stopPropagation();
                   onDelete(pin.id);
                 }}
-                className="w-7 h-7 flex items-center justify-center rounded-xl hover:bg-black/10 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-black/5 group"
                 aria-label="Close calendar"
               >
-                <X className={`w-4 h-4 ${textColorClass}`} />
+                <X className={`w-3.5 h-3.5 ${textColorClass} group-hover:text-white`} />
               </button>
             )}
           </div>

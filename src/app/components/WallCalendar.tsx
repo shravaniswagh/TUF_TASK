@@ -17,6 +17,7 @@ interface Note {
   text: string;
   dateRange: DateRange;
   monthYear: string;
+  color?: string;
 }
 
 interface WallCalendarProps {
@@ -197,12 +198,13 @@ export function WallCalendar({
     }
   };
 
-  const handleAddNote = (text: string) => {
+  const handleAddNote = (text: string, color?: string) => {
     const newNote: Note = {
       id: Date.now().toString(),
       text,
       dateRange: { ...selectedRange },
       monthYear: currentMonthYear,
+      color,
     };
     setNotes([...notes, newNote]);
   };
