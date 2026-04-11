@@ -327,10 +327,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
         overflow: 'hidden',
       }}
     >
-      {/* ── Workspace Layer (Foundation) ─────────────────────────── */}
-      <div className="absolute inset-0 z-0">
-        {/* Minimalist Instructions */}
-        <AnimatePresence>
+      {/* ── Minimalist Instructions ────────────────────────────────── */}
+      <AnimatePresence>
         {!fullscreenPinId && hasLoaded && pins.length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -452,7 +450,6 @@ export function PinBoard({ boardId }: { boardId: string }) {
           }
         })}
       </AnimatePresence>
-      </div>
 
       <AnimatePresence>
         {fullscreenPinId && pins.find(p => p.id === fullscreenPinId) && (
@@ -516,7 +513,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
             {showAddMenu && (
               <div 
                 className="fixed inset-0 bg-black/5 backdrop-blur-[1px]" 
-                style={{ zIndex: 89999 }}
+                style={{ zIndex: 2147483645 }}
                 onClick={() => setShowAddMenu(false)} 
               />
             )}
@@ -524,7 +521,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
           <div 
             className={`fixed bottom-16 right-6 flex flex-col items-end gap-3 transition-opacity duration-300 ${fullscreenPinId ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-            style={{ zIndex: 90000 }}
+            style={{ zIndex: 2147483646 }}
           >
             <AnimatePresence>
               {showAddMenu && (
