@@ -229,11 +229,47 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        onUpdate(pin.id, { content: reader.result as string });
-        setShowImageInput(false);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_DIMENSION = 800; // Increased max dimension for better quality while staying under 1MB
+
+          if (width > height) {
+            if (width > MAX_DIMENSION) {
+              height = Math.round((height * MAX_DIMENSION) / width);
+              width = MAX_DIMENSION;
+            }
+          } else {
+            if (height > MAX_DIMENSION) {
+              width = Math.round((width * MAX_DIMENSION) / height);
+              height = MAX_DIMENSION;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            // Compress as JPEG to massively reduce base64 size (Firestore has 1MB limit)
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+            onUpdate(pin.id, { content: compressedDataUrl });
+            setShowImageInput(false);
+          } else {
+            // Fallback if canvas context fails
+            onUpdate(pin.id, { content: event.target?.result as string });
+            setShowImageInput(false);
+          }
+        };
+        img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
+      
+      // Reset input value so the same file can be uploaded again if needed
+      e.target.value = '';
     }
   };
 
