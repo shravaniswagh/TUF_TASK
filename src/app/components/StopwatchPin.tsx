@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Resizable } from 're-resizable';
-import { X, GripVertical, Play, Pause, RotateCcw, Maximize2, Minimize2, Volume2, Settings } from 'lucide-react';
+import { X, GripVertical, Play, Pause, RotateCcw, Maximize2, Minimize2, Settings2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PinData } from './Pin';
 import { THEME_CONFIG } from '../theme-config';
@@ -10,6 +10,7 @@ interface StopwatchPinProps {
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
   onDragStart: (id: string, e: React.MouseEvent) => void;
+  onOpenInspector: (id: string) => void;
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
@@ -36,74 +37,118 @@ function getContrastColor(hexColor?: string) {
   return brightness > 140 ? 'text-slate-900' : 'text-slate-50';
 }
 
-function darkenColor(hex: string, percent: number): string {
-  hex = hex.replace('#', '');
-  let r = parseInt(hex.substring(0, 2), 16);
-  let g = parseInt(hex.substring(2, 4), 16);
-  let b = parseInt(hex.substring(4, 6), 16);
-  r = Math.floor(r * (1 - percent / 100));
-  g = Math.floor(g * (1 - percent / 100));
-  b = Math.floor(b * (1 - percent / 100));
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-const FlipUnit = ({ value, label, isFullscreen }: { value: number; label: string; isFullscreen?: boolean }) => {
-  const formattedValue = value.toString().padStart(2, '0');
-  const prevValue = useRef(formattedValue);
+const FlipCard = ({ current, next, isFullscreen, itemColor, textColor, fontFamily }: { 
+  current: string; 
+  next: string; 
+  isFullscreen?: boolean;
+  itemColor: string;
+  textColor: string;
+  fontFamily: string;
+}) => {
   const [isFlipping, setIsFlipping] = useState(false);
+  const [displayNext, setDisplayNext] = useState(next);
+  const [displayCurrent, setDisplayCurrent] = useState(current);
 
   useEffect(() => {
-    if (formattedValue !== prevValue.current) {
+    if (next !== displayNext) {
       setIsFlipping(true);
       const timer = setTimeout(() => {
         setIsFlipping(false);
-        prevValue.current = formattedValue;
+        setDisplayCurrent(next);
+        setDisplayNext(next);
       }, 600);
       return () => clearTimeout(timer);
     }
-  }, [formattedValue]);
+  }, [next, displayNext]);
+
+  const sizeClass = isFullscreen ? 'w-48 h-64 text-8xl' : 'w-20 h-28 text-5xl';
+  const radiusClass = isFullscreen ? 'rounded-[32px]' : 'rounded-2xl';
+
+  return (
+    <div className={`relative ${sizeClass} perspective-1000`} style={{ fontFamily }}>
+      {/* Static Top (Next Value) */}
+      <div className={`absolute inset-0 flex items-center justify-center font-black ${radiusClass} overflow-hidden h-1/2 border-b border-black/10`} 
+           style={{ backgroundColor: itemColor, color: textColor }}>
+        <span className="translate-y-1/2">{displayNext}</span>
+      </div>
+
+      {/* Static Bottom (Current Value) */}
+      <div className={`absolute inset-x-0 bottom-0 top-1/2 flex items-center justify-center font-black ${radiusClass} overflow-hidden`} 
+           style={{ backgroundColor: itemColor, color: textColor }}>
+        <span className="-translate-y-1/2">{displayCurrent}</span>
+      </div>
+
+      {/* Animated Flip Part */}
+      <AnimatePresence>
+        {isFlipping && (
+          <motion.div
+            key={displayCurrent}
+            initial={{ rotateX: 0 }}
+            animate={{ rotateX: -180 }}
+            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+            className="absolute inset-x-0 top-0 h-1/2 z-20 origin-bottom"
+            style={{ transformStyle: 'preserve-3d' }}
+          >
+            {/* Front of flipping card (Top half of current value) */}
+            <div className={`absolute inset-0 backface-hidden flex items-center justify-center font-black ${radiusClass} overflow-hidden border-b border-black/5`}
+                 style={{ backgroundColor: itemColor, color: textColor }}>
+              <span className="translate-y-1/2">{displayCurrent}</span>
+            </div>
+            
+            {/* Back of flipping card (Bottom half of next value) */}
+            <div className={`absolute inset-0 backface-hidden flex items-center justify-center font-black ${radiusClass} overflow-hidden`}
+                 style={{ backgroundColor: itemColor, color: textColor, transform: 'rotateX(180deg)' }}>
+              <span className="-translate-y-1/2">{displayNext}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Visual Slit */}
+      <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-black/20 z-10" />
+    </div>
+  );
+};
+
+const FlipUnit = ({ value, label, isFullscreen, itemColor, textColor, fontFamily }: { 
+  value: number; 
+  label: string; 
+  isFullscreen?: boolean;
+  itemColor: string;
+  textColor: string;
+  fontFamily: string;
+}) => {
+  const valStr = value.toString().padStart(2, '0');
+  const [prevVal, setPrevVal] = useState(valStr);
+
+  useEffect(() => {
+    if (valStr !== prevVal) {
+      const timer = setTimeout(() => setPrevVal(valStr), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [valStr, prevVal]);
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className={`relative ${isFullscreen ? 'w-48 h-64 text-8xl' : 'w-20 h-28 text-5xl'} bg-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl border border-white/5`}>
-        {/* Top Half */}
-        <div className="absolute inset-0 flex items-center justify-center font-black text-[#e5e5e5] h-1/2 bg-[#1a1a1a] border-b border-black/20">
-          <span className="translate-y-1/2">{formattedValue}</span>
-        </div>
-        {/* Bottom Half */}
-        <div className="absolute inset-x-0 bottom-0 top-1/2 flex items-center justify-center font-black text-[#e5e5e5] overflow-hidden bg-[#1a1a1a]">
-          <span className="-translate-y-1/2">{formattedValue}</span>
-        </div>
-
-        {/* Animation Flip Card */}
-        <AnimatePresence mode="popLayout">
-          {isFlipping && (
-            <motion.div
-              key={formattedValue}
-              initial={{ rotateX: 0 }}
-              animate={{ rotateX: -180 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-              className="absolute inset-0 z-20 origin-center"
-              style={{ transformStyle: 'preserve-3d' }}
-            >
-              <div className="absolute inset-0 backface-hidden flex items-center justify-center font-black text-[#e5e5e5] h-1/2 bg-[#1a1a1a] border-b border-black/20 overflow-hidden">
-                <span className="translate-y-1/2">{prevValue.current}</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        
-        <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-black/40 z-10" />
-      </div>
-      <span className={`font-bold uppercase tracking-widest ${isFullscreen ? 'text-xs text-white/40' : 'text-[10px] text-slate-500'}`}>{label}</span>
+      <FlipCard 
+        current={prevVal} 
+        next={valStr} 
+        isFullscreen={isFullscreen} 
+        itemColor={itemColor} 
+        textColor={textColor}
+        fontFamily={fontFamily}
+      />
+      <span className={`font-black uppercase tracking-[0.2em] opacity-40 ${isFullscreen ? 'text-xs' : 'text-[10px]'}`} 
+            style={{ color: textColor }}>{label}</span>
     </div>
   );
 };
 
 export function StopwatchPin({ 
-  pin, onUpdate, onDelete, onDragStart, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement 
+  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, activeTaskId, activeTaskName, onFocusIncrement 
 }: StopwatchPinProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [seconds, setSeconds] = useState(pin.totalSeconds || 0);
   const [isActive, setIsActive] = useState(!pin.isPaused);
   
@@ -122,7 +167,7 @@ export function StopwatchPin({
       clearInterval(interval);
     }
     return () => clearInterval(interval);
-  }, [isActive, pin.isPaused, pin.id, onUpdate]);
+  }, [isActive, pin.isPaused, pin.id, onUpdate, onFocusIncrement]);
 
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -143,6 +188,10 @@ export function StopwatchPin({
   const defaultBg = isDark ? '#1a1a1a' : '#f8fafc';
   const bgColor = pin.color || defaultBg;
   const textColorClass = getContrastColor(bgColor);
+  
+  const clockFaceColor = pin.itemColor || '#1a1a1a';
+  const clockTextColor = pin.textColor || '#e5e5e5';
+  const customFont = pin.fontFamily || 'system-ui';
 
   return (
     <Resizable
@@ -162,11 +211,13 @@ export function StopwatchPin({
       }}
     >
       <motion.div
-        className={`w-full h-full flex flex-col rounded-3xl overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl scale-[1.02]' : ''}`}
+        className={`w-full h-full flex flex-col rounded-[32px] overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl' : ''}`}
         onClick={onSelect}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           backgroundColor: isFullscreen ? '#0a0a0a' : bgColor,
-          boxShadow: isFullscreen ? 'none' : (isSelected ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 12px rgba(0,0,0,0.07)'),
+          boxShadow: isFullscreen ? 'none' : (isSelected ? '0 32px 64px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.07)'),
           border: isFullscreen ? 'none' : (isSelected ? '2px solid #6366f1' : '1px solid rgba(0,0,0,0.05)'),
         }}
       >
@@ -192,56 +243,67 @@ export function StopwatchPin({
                 e.stopPropagation();
                 onDragStart(pin.id, e);
               }}
-              className="flex items-center justify-between px-4 pt-4 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+              className="flex items-center justify-between px-5 pt-5 pb-2 cursor-grab active:cursor-grabbing shrink-0"
               style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
             >
               <div className="flex items-center gap-2">
                 <GripVertical className="w-4 h-4 text-slate-400" />
-                <span className={`text-xs font-bold uppercase tracking-widest ${textColorClass}`}>Timer</span>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${textColorClass}`}>Timer</span>
               </div>
-              {!isLocked && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
-                  className={`w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors`}
-                >
-                  <X className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
-                </button>
-              )}
+              
+              <div className="flex items-center gap-1">
+                <AnimatePresence>
+                  {isHovered && !isLocked && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8, x: 10 }}
+                      animate={{ opacity: 1, scale: 1, x: 0 }}
+                      exit={{ opacity: 0, scale: 0.8, x: 10 }}
+                      onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
+                      className={`w-7 h-7 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10`}
+                    >
+                      <Settings2 className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-600'}`} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+
+                {!isLocked && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
+                    className={`w-7 h-7 flex items-center justify-center rounded-xl hover:bg-black/10 transition-colors`}
+                  >
+                    <X className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+                  </button>
+                )}
+              </div>
             </div>
           </>
         )}
 
         {/* Display */}
-        <div className={`flex-1 flex flex-col items-center justify-center gap-8 ${isFullscreen ? 'bg-black p-12' : 'p-6'}`}>
+        <div className={`flex-1 flex flex-col items-center justify-center gap-12 ${isFullscreen ? 'bg-black p-12' : 'p-8'}`}>
           <motion.div 
-            animate={isFullscreen ? {
-              scale: [1, 1.03, 1],
-            } : {}}
-            transition={isFullscreen ? {
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut"
-            } : {}}
-            className="flex items-center gap-4 md:gap-8"
+            animate={isFullscreen ? { scale: [1, 1.03, 1] } : {}}
+            transition={isFullscreen ? { duration: 10, repeat: Infinity, ease: "easeInOut" } : {}}
+            className="flex items-center gap-6 md:gap-10"
           >
-            <FlipUnit value={h} label="Hours" isFullscreen={isFullscreen} />
-            <FlipUnit value={m} label="Minutes" isFullscreen={isFullscreen} />
-            <FlipUnit value={s} label="Seconds" isFullscreen={isFullscreen} />
+            <FlipUnit value={h} label="Hours" isFullscreen={isFullscreen} itemColor={clockFaceColor} textColor={clockTextColor} fontFamily={customFont} />
+            <FlipUnit value={m} label="Minutes" isFullscreen={isFullscreen} itemColor={clockFaceColor} textColor={clockTextColor} fontFamily={customFont} />
+            <FlipUnit value={s} label="Seconds" isFullscreen={isFullscreen} itemColor={clockFaceColor} textColor={clockTextColor} fontFamily={customFont} />
           </motion.div>
 
-          <div className="flex flex-col items-center gap-6 mt-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col items-center gap-8">
+            <div className="flex items-center gap-6">
               <button 
                 onClick={handleToggle}
-                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg active:scale-95 ${isActive && !pin.isPaused ? 'bg-rose-500 hover:bg-rose-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+                className={`w-16 h-16 rounded-[24px] flex items-center justify-center transition-all shadow-xl active:scale-95 ${isActive && !pin.isPaused ? 'bg-rose-500 hover:bg-rose-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
               >
-                {pin.isPaused ? <Play className="w-6 h-6 text-white ml-1 fill-white" /> : <Pause className="w-6 h-6 text-white" />}
+                {pin.isPaused ? <Play className="w-7 h-7 text-white ml-1 fill-white" /> : <Pause className="w-7 h-7 text-white" />}
               </button>
               <button 
                 onClick={handleReset}
-                className={`w-12 h-12 rounded-full flex items-center justify-center bg-white/10 dark:bg-white/5 border border-white/10 hover:bg-white/20 transition-all shadow-md active:scale-95`}
+                className={`w-14 h-14 rounded-[20px] flex items-center justify-center bg-white/10 dark:bg-white/5 border border-white/10 hover:bg-white/20 transition-all shadow-lg active:scale-95`}
               >
-                <RotateCcw className={`w-5 h-5 ${isFullscreen ? 'text-white/60' : (textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-600')}`} />
+                <RotateCcw className={`w-6 h-6 ${isFullscreen ? 'text-white/60' : (textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-600')}`} />
               </button>
             </div>
 
@@ -249,11 +311,11 @@ export function StopwatchPin({
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full border shadow-sm animate-pulse ${isFullscreen ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-indigo-500/10 border-indigo-500/20'}`}
+                className={`flex items-center gap-3 px-6 py-2.5 rounded-full border shadow-xl animate-pulse ${isFullscreen ? 'bg-indigo-500/20 border-indigo-500/30' : 'bg-indigo-500/10 border-indigo-500/20'}`}
               >
-                <div className="w-2 h-2 rounded-full bg-indigo-500" />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${isFullscreen ? 'text-indigo-400' : 'text-indigo-600'}`}>
-                  Focused: {activeTaskName || 'Active Task'}
+                <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.8)]" />
+                <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${isFullscreen ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                  {activeTaskName || 'Active Task'}
                 </span>
               </motion.div>
             )}
@@ -261,12 +323,12 @@ export function StopwatchPin({
         </div>
 
         {/* Toggle FS Button */}
-        <div className="absolute bottom-6 right-6 z-10">
+        <div className="absolute bottom-8 right-8 z-10">
           <button 
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all text-white/60 hover:text-white"
+            className="p-4 rounded-[20px] bg-white/10 backdrop-blur-xl border border-white/10 hover:bg-white/20 transition-all text-white/60 hover:text-white shadow-2xl"
           >
-            {isFullscreen ? <Minimize2 className="w-6 h-6" /> : <Maximize2 className="w-6 h-6" />}
+            {isFullscreen ? <Minimize2 className="w-7 h-7" /> : <Maximize2 className="w-7 h-7" />}
           </button>
         </div>
       </motion.div>

@@ -73,6 +73,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const [boardColor, setBoardColor] = useState<string | null>(null);
   const [dragging, setDragging] = useState<DragState | null>(null);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+  const [inspectorPinId, setInspectorPinId] = useState<string | null>(null);
   const [activeFocusTaskId, setActiveFocusTaskId] = useState<string | null>(null);
   const [focusHistory, setFocusHistory] = useState<Record<string, number>>({});
   const boardRef = useRef<HTMLDivElement>(null);
@@ -317,6 +318,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
               isLocked={isLocked}
               isSelected={selectedPinId === pin.id}
               onSelect={() => setSelectedPinId(pin.id)}
+              onOpenInspector={() => setInspectorPinId(pin.id)}
               onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
           );
         } else if (pin.type === 'stopwatch') {
@@ -326,6 +328,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
               isLocked={isLocked}
               isSelected={selectedPinId === pin.id}
               onSelect={() => setSelectedPinId(pin.id)}
+              onOpenInspector={() => setInspectorPinId(pin.id)}
               onToggleFocus={(tid) => setActiveFocusTaskId(tid)}
               activeTaskId={activeFocusTaskId}
               activeTaskName={pins.find(p => p.type === 'todo' || p.type === 'daily-tasks')?.content ? 
@@ -352,6 +355,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
               isLocked={isLocked}
               isSelected={selectedPinId === pin.id}
               onSelect={() => setSelectedPinId(pin.id)}
+              onOpenInspector={() => setInspectorPinId(pin.id)}
               dailyTotal={dailyTotal}
               onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
           );
@@ -362,6 +366,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
               isLocked={isLocked}
               isSelected={selectedPinId === pin.id}
               onSelect={() => setSelectedPinId(pin.id)}
+              onOpenInspector={() => setInspectorPinId(pin.id)}
               weeklyData={weeklyData}
               onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
           );
@@ -372,6 +377,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
               isLocked={isLocked}
               isSelected={selectedPinId === pin.id}
               onSelect={() => setSelectedPinId(pin.id)}
+              onOpenInspector={() => setInspectorPinId(pin.id)}
               activeFocusTaskId={activeFocusTaskId}
               onStartFocus={(tid) => {
                 if (activeFocusTaskId === tid) {
@@ -397,15 +403,15 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
       {/* ── Universal Pin Inspector ────────────────────────────────── */}
       <AnimatePresence>
-        {selectedPinId && (
+        {inspectorPinId && (
           <PinInspector
-            pin={pins.find(p => p.id === selectedPinId) || null}
+            pin={pins.find(p => p.id === inspectorPinId) || null}
             onUpdate={updatePin}
             onDelete={(id) => {
               deletePin(id);
-              setSelectedPinId(null);
+              setInspectorPinId(null);
             }}
-            onClose={() => setSelectedPinId(null)}
+            onClose={() => setInspectorPinId(null)}
             isDark={isDark}
           />
         )}

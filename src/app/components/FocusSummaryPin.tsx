@@ -1,6 +1,7 @@
-import { motion } from 'motion/react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Resizable } from 're-resizable';
-import { Timer, Target, GripVertical, X } from 'lucide-react';
+import { Timer, Target, GripVertical, X, Settings2 } from 'lucide-react';
 import { PinData } from './Pin';
 import { THEME_CONFIG } from '../theme-config';
 
@@ -9,6 +10,7 @@ interface FocusSummaryPinProps {
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
   onDragStart: (id: string, e: React.MouseEvent) => void;
+  onOpenInspector: (id: string) => void;
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
@@ -33,8 +35,9 @@ function getContrastColor(hexColor?: string) {
 }
 
 export function FocusSummaryPin({ 
-  pin, onUpdate, onDelete, onDragStart, isDragging, isDark, isLocked, isSelected, onSelect, dailyTotal 
+  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, dailyTotal 
 }: FocusSummaryPinProps) {
+  const [isHovered, setIsHovered] = useState(false);
   const hours = Math.floor(dailyTotal / 3600);
   const minutes = Math.floor((dailyTotal % 3600) / 60);
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';
@@ -59,8 +62,10 @@ export function FocusSummaryPin({
       }}
     >
       <motion.div
-        className={`w-full h-full flex flex-col rounded-3xl overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl scale-[1.02]' : ''}`}
+        className={`w-full h-full flex flex-col rounded-[32px] overflow-hidden transition-all duration-300 ${isSelected ? 'ring-4 ring-indigo-500/50 shadow-2xl scale-[1.01]' : ''}`}
         onClick={onSelect}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           backgroundColor: bgColor,
           boxShadow: isSelected ? '0 20px 40px rgba(0,0,0,0.15)' : '0 2px 12px rgba(0,0,0,0.07)',
@@ -87,21 +92,36 @@ export function FocusSummaryPin({
             e.stopPropagation();
             onDragStart(pin.id, e);
           }}
-          className="flex items-center justify-between px-4 pt-4 pb-2 cursor-grab active:cursor-grabbing shrink-0"
+          className="flex items-center justify-between px-5 pt-5 pb-2 cursor-grab active:cursor-grabbing shrink-0"
           style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
         >
           <div className="flex items-center gap-2">
             <GripVertical className="w-4 h-4 text-slate-400" />
-            <span className={`text-xs font-bold uppercase tracking-widest ${textColorClass}`}>Daily Focus</span>
+            <span className={`text-[10px] font-black uppercase tracking-widest ${textColorClass}`}>Daily Focus</span>
           </div>
-          {!isLocked && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
-              className={`w-6 h-6 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors`}
-            >
-              <X className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            <AnimatePresence>
+              {isHovered && !isLocked && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
+                  className={`w-7 h-7 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 transition-all backdrop-blur-md border border-white/10`}
+                >
+                  <Settings2 className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-white' : 'text-slate-600'}`} />
+                </motion.button>
+              )}
+            </AnimatePresence>
+            {!isLocked && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
+                className={`w-7 h-7 flex items-center justify-center rounded-xl hover:bg-black/10 transition-colors`}
+              >
+                <X className={`w-4 h-4 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 flex flex-col justify-center px-6 pb-4">

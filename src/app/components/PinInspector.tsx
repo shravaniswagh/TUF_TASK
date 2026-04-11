@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Type, Palette, ImageIcon, Layers, MoveUp, MoveDown, Trash2, Layout, Settings2, Sparkles } from 'lucide-react';
+import { X, Type, Palette, ImageIcon, Layers, MoveUp, MoveDown, Trash2, Layout, Settings2, Sparkles, Clock, Check } from 'lucide-react';
 import { PinData } from './Pin';
 import { THEME_CONFIG } from '../theme-config';
 
@@ -12,24 +12,23 @@ interface PinInspectorProps {
 }
 
 const FONTS = [
-  { name: 'Default', value: 'system-ui' },
-  { name: 'Typewriter', value: "'Courier New', monospace" },
-  { name: 'Playful', value: "'Comic Sans MS', cursive" },
-  { name: 'Elegant', value: "'Georgia', serif" },
-  { name: 'Handwritten', value: "'Brush Script MT', cursive" },
+  { name: 'Modern Sans', value: 'system-ui' },
+  { name: 'Vintage Type', value: "'Courier New', monospace" },
+  { name: 'Playful Hand', value: "'Comic Sans MS', cursive" },
+  { name: 'Elegant Serif', value: "'Georgia', serif" },
+  { name: 'Digital Classic', value: "'Monaco', monospace" },
 ];
 
-const FONT_SIZES = ['12px', '14px', '16px', '20px', '24px', '32px'];
+const FONT_SIZES = ['12px', '14px', '16px', '20px', '24px', '32px', '48px', '64px'];
 
 const TEXT_COLORS = [
-  { name: 'Auto', value: undefined },
-  { name: 'Black', value: '#000000' },
-  { name: 'White', value: '#FFFFFF' },
-  { name: 'Blue', value: '#3B82F6' },
-  { name: 'Rose', value: '#F43F5E' },
-  { name: 'Emerald', value: '#10B981' },
-  { name: 'Amber', value: '#F59E0B' },
-  { name: 'Indigo', value: '#6366F1' },
+  { name: 'Classic', value: undefined },
+  { name: 'Midnight', value: '#0f172a' },
+  { name: 'Snow', value: '#ffffff' },
+  { name: 'Electric', value: '#6366f1' },
+  { name: 'Rose', value: '#f43f5e' },
+  { name: 'Emerald', value: '#10b981' },
+  { name: 'Amber', value: '#f59e0b' },
 ];
 
 const CALENDAR_BG_COLORS = [
@@ -50,15 +49,17 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
     onUpdate(pin.id, updates);
   };
 
+  const accentColor = pin.color && pin.color !== 'transparent' ? pin.color : '#6366f1';
+
   const Section = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
-    <div className="mb-8 last:mb-0">
-      <div className="flex items-center gap-2 mb-4 px-1">
-        <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-500">
-          <Icon className="w-4 h-4" />
+    <div className="mb-10 last:mb-0">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="p-2 rounded-[14px] shadow-sm bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+           <Icon className="w-4 h-4" style={{ color: accentColor }} />
         </div>
         <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{title}</h3>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-5 px-1">
         {children}
       </div>
     </div>
@@ -66,190 +67,177 @@ export function PinInspector({ pin, onUpdate, onClose, onDelete, isDark }: PinIn
 
   return (
     <motion.div
-      initial={{ x: 320, opacity: 0 }}
+      initial={{ x: 380, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      exit={{ x: 320, opacity: 0 }}
-      transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="fixed top-4 right-4 bottom-4 w-80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl rounded-[32px] shadow-2xl border border-white/20 dark:border-slate-800/50 z-[2147483647] flex flex-col overflow-hidden"
+      exit={{ x: 380, opacity: 0 }}
+      transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+      className="fixed top-6 right-6 bottom-6 w-[340px] bg-white/70 dark:bg-slate-900/70 backdrop-blur-[30px] rounded-[40px] shadow-[0_32px_128px_rgba(0,0,0,0.15)] border border-white/40 dark:border-slate-800/40 z-[2147483647] flex flex-col overflow-hidden"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Header */}
-      <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <h2 className="text-lg font-black text-slate-800 dark:text-white tracking-tighter">PIN SETTINGS</h2>
-          </div>
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-widest">
-            {pin.type.replace('-', ' ')} #{pin.id.split('-').pop()}
-          </p>
+      <div className="p-8 border-b border-slate-100/50 dark:border-slate-800/50 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+           <div className="w-12 h-12 rounded-[20px] flex items-center justify-center shadow-inner" style={{ backgroundColor: accentColor + '20' }}>
+              <Settings2 className="w-6 h-6" style={{ color: accentColor }} />
+           </div>
+           <div>
+              <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight leading-none mb-1.5">Settings</h2>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-[0.1em]">
+                {pin.type.replace('-', ' ')}
+              </p>
+           </div>
         </div>
         <button 
           onClick={onClose}
-          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all group"
+          className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-rose-500 hover:text-white rounded-[15px] transition-all transform hover:rotate-90"
         >
-          <X className="w-5 h-5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-2">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-6">
         
-        {/* Appearance Section */}
-        <Section title="Appearance" icon={Palette}>
-          <div className="space-y-4">
-            {/* Body Color */}
+        {/* Visual Appearance */}
+        <Section title="Style & Color" icon={Palette}>
+          <div className="space-y-6">
             <div>
-              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 block">Background Palette</label>
-              <div className="grid grid-cols-6 gap-2">
+              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-3 block uppercase tracking-wide px-1">Pin Background</label>
+              <div className="grid grid-cols-6 gap-2.5">
                 {(pin.type === 'calendar' ? CALENDAR_BG_COLORS : THEME_CONFIG.pinPalette).map((color) => (
                   <button
                     key={color}
                     onClick={() => handleUpdate({ color })}
-                    className={`w-full aspect-square rounded-full border-2 transition-transform hover:scale-125 ${pin.color === color ? 'border-indigo-500 scale-110 shadow-lg' : 'border-transparent'}`}
+                    className={`w-full aspect-square rounded-[12px] border-2 transition-all hover:scale-110 flex items-center justify-center ${pin.color === color ? 'border-slate-900 dark:border-white shadow-xl scale-105' : 'border-transparent'}`}
                     style={{ backgroundColor: color }}
-                  />
+                  >
+                    {pin.color === color && <Check className="w-3.5 h-3.5 mix-blend-difference text-white" />}
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Text Color (Notes/Todo/Countdown/Focus) */}
-            {(['note', 'todo', 'countdown', 'clock', 'stopwatch', 'focus-summary', 'weekly-analysis'].includes(pin.type)) && (
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 block">Text Accent</label>
-                <div className="flex flex-wrap gap-2">
-                  {TEXT_COLORS.map((c) => (
-                    <button
-                      key={c.name}
-                      onClick={() => handleUpdate({ textColor: c.value })}
-                      className={`w-8 h-8 rounded-xl border-2 transition-all flex items-center justify-center ${pin.textColor === c.value ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'border-slate-100 dark:border-slate-800'}`}
-                      style={{ color: c.value || (isDark ? '#fff' : '#000') }}
-                      title={c.name}
-                    >
-                      <Type className="w-4 h-4" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {pin.type === 'stopwatch' && (
+               <div>
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-3 block uppercase tracking-wide px-1">Clock Face Color</label>
+                  <div className="grid grid-cols-6 gap-2.5">
+                    {['#1a1a1a', '#000000', '#f8fafc', '#6366f1', '#f43f5e', '#10b981', '#f59e0b'].map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => handleUpdate({ itemColor: color })}
+                        className={`w-full aspect-square rounded-[12px] border-2 transition-all hover:scale-110 flex items-center justify-center ${pin.itemColor === color ? 'border-slate-900 dark:border-white shadow-xl scale-105' : 'border-transparent shadow-sm'}`}
+                        style={{ backgroundColor: color }}
+                      >
+                        {pin.itemColor === color && <Check className="w-3.5 h-3.5 mix-blend-difference text-white" />}
+                      </button>
+                    ))}
+                  </div>
+               </div>
             )}
           </div>
         </Section>
 
-        {/* Typography Section */}
+        {/* Typography */}
         {(['note', 'todo', 'countdown', 'clock', 'stopwatch', 'focus-summary', 'weekly-analysis'].includes(pin.type)) && (
           <Section title="Typography" icon={Type}>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 block">Font Family</label>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {FONTS.map((font) => (
-                    <button
-                      key={font.value}
-                      onClick={() => handleUpdate({ fontFamily: font.value })}
-                      className={`w-full px-4 py-2 text-sm text-left rounded-xl transition-all ${pin.fontFamily === font.value ? 'bg-indigo-500 text-white shadow-md' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                      style={{ fontFamily: font.value }}
+            <div className="space-y-6">
+               <div className="grid grid-cols-1 gap-2">
+                 {FONTS.map((font) => (
+                   <button
+                     key={font.value}
+                     onClick={() => handleUpdate({ fontFamily: font.value })}
+                     className={`w-full px-5 py-3 text-sm text-left rounded-2xl border transition-all flex items-center justify-between ${pin.fontFamily === font.value ? 'bg-slate-900 text-white border-slate-900 shadow-lg' : 'bg-white/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border-slate-100 dark:border-slate-700 hover:border-slate-300'}`}
+                     style={{ fontFamily: font.value }}
+                   >
+                     <span>{font.name}</span>
+                     {pin.fontFamily === font.value && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                   </button>
+                 ))}
+               </div>
+
+               <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2.5 block px-1 uppercase tracking-wide">Size</label>
+                    <select 
+                      value={pin.fontSize || '16px'}
+                      onChange={(e) => handleUpdate({ fontSize: e.target.value })}
+                      className="w-full bg-white/50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl px-4 py-3 text-xs text-slate-600 dark:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all font-bold appearance-none cursor-pointer shadow-sm hover:border-slate-200"
                     >
-                      {font.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 block">Size</label>
-                  <select 
-                    value={pin.fontSize || '16px'}
-                    onChange={(e) => handleUpdate({ fontSize: e.target.value })}
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl px-3 py-2 text-xs text-slate-600 dark:text-slate-300 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all font-bold"
-                  >
-                    {FONT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
+                      {FONT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2.5 block px-1 uppercase tracking-wide">Accent</label>
+                    <div className="flex gap-1.5">
+                        {TEXT_COLORS.slice(0, 4).map(c => (
+                           <button 
+                             key={c.name} 
+                             onClick={() => handleUpdate({ textColor: c.value })}
+                             className={`w-10 h-10 rounded-2xl border-2 flex items-center justify-center transition-all ${pin.textColor === c.value ? 'border-slate-900 shadow-md scale-105' : 'border-slate-100 dark:border-slate-800'}`}
+                             style={{ color: c.value || (isDark ? '#fff' : '#000') }}
+                           >
+                              <Type className="w-4 h-4" />
+                           </button>
+                        ))}
+                    </div>
+                  </div>
+               </div>
             </div>
           </Section>
         )}
 
-        {/* Image / Calendar Content Section */}
-        {(pin.type === 'image' || pin.type === 'calendar') && (
-          <Section title="Content Layout" icon={Layout}>
-            <div className="space-y-4">
-              {pin.type === 'image' && (
+        {/* Content Specifics */}
+        {(pin.type === 'calendar') && (
+          <Section title="Structure" icon={Layout}>
+             <div className="space-y-6">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 block">Image Fit</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['cover', 'contain', 'fill'].map((fit) => (
-                      <button
-                        key={fit}
-                        onClick={() => handleUpdate({ imageObjectFit: fit as any })}
-                        className={`px-3 py-2 text-[10px] font-bold uppercase rounded-lg border-2 transition-all ${pin.imageObjectFit === fit ? 'border-indigo-500 bg-indigo-500/10 text-indigo-600' : 'border-slate-100 dark:border-slate-800 text-slate-400'}`}
+                  <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-3 block px-1 uppercase tracking-wide">Line Color</label>
+                  <div className="flex flex-wrap gap-2.5">
+                    {CURVE_COLORS.map(color => (
+                      <button 
+                        key={color}
+                        onClick={() => handleUpdate({ curveColor: color })}
+                        className={`w-8 h-8 rounded-xl transition-all hover:scale-110 flex items-center justify-center ${pin.curveColor === color ? 'ring-2 ring-offset-2 ring-slate-900' : 'shadow-sm'}`}
+                        style={{ backgroundColor: color }}
                       >
-                        {fit}
+                         {pin.curveColor === color && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </button>
                     ))}
                   </div>
                 </div>
-              )}
-              
-              {pin.type === 'calendar' && (
-                <>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 block">Curve Accent</label>
-                    <div className="flex flex-wrap gap-2">
-                      {CURVE_COLORS.map(color => (
-                        <button 
-                          key={color}
-                          onClick={() => handleUpdate({ curveColor: color })}
-                          className={`w-6 h-6 rounded-lg transition-transform hover:scale-125 ${pin.curveColor === color ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900 border-2 border-white dark:border-slate-800' : ''}`}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 block">Header Image URL</label>
-                    <input 
-                      type="text"
-                      value={pin.headerImage || ''}
-                      onChange={(e) => handleUpdate({ headerImage: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl px-3 py-2 text-xs text-slate-600 dark:text-slate-300 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
+             </div>
           </Section>
         )}
 
-        {/* Management Section */}
+        {/* Layer Management */}
         <Section title="Management" icon={Layers}>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <button 
-                onClick={() => handleUpdate({ zIndex: Date.now() })}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-slate-600 dark:text-slate-300 hover:text-indigo-600 rounded-2xl transition-all border border-slate-100 dark:border-slate-800 text-xs font-bold"
-              >
-                <MoveUp className="w-3.5 h-3.5" />
-                To Front
-              </button>
-              <button 
-                onClick={() => onDelete(pin.id)}
-                className="flex items-center justify-center gap-2 px-4 py-3 bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-100 dark:hover:bg-rose-900/20 text-rose-600 rounded-2xl transition-all border border-rose-100 dark:border-rose-900/20 text-xs font-bold"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete
-              </button>
-            </div>
+          <div className="grid grid-cols-2 gap-3">
+            <button 
+              onClick={() => handleUpdate({ zIndex: Date.now() })}
+              className="group flex items-center justify-center gap-2.5 px-4 py-4 bg-slate-900 text-white rounded-[20px] transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 shadow-lg shadow-slate-900/10 text-xs font-black uppercase tracking-widest"
+            >
+              <MoveUp className="w-3.5 h-3.5" />
+              Top
+            </button>
+            <button 
+              onClick={() => onDelete(pin.id)}
+              className="flex items-center justify-center gap-2.5 px-4 py-4 bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white rounded-[20px] transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 border border-rose-100 text-xs font-black uppercase tracking-widest"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
           </div>
         </Section>
       </div>
 
-      {/* Footer Info */}
-      <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 pointer-events-none">
-        <p className="text-[9px] text-center text-slate-400 uppercase tracking-widest font-bold">
-          Changes are saved automatically to cloud
-        </p>
+      {/* Persistence Note */}
+      <div className="p-8 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-100/50 dark:border-slate-800/50 pointer-events-none">
+        <div className="flex items-center justify-center gap-2">
+           <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+           <p className="text-[9px] text-center text-slate-400 uppercase tracking-[0.2em] font-black">
+             Syncing to silk cloud
+           </p>
+        </div>
       </div>
     </motion.div>
   );

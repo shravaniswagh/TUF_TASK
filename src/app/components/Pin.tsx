@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { THEME_CONFIG } from '../theme-config';
 import { Resizable } from 're-resizable';
-import { X, GripVertical, Image as ImageIcon, Upload, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Play, Pause } from 'lucide-react';
-import { motion } from 'motion/react';
+import { X, GripVertical, Image as ImageIcon, Upload, Plus, Trash2, CheckCircle2, Circle, ListTodo, ClipboardList, Play, Pause, Settings2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 export interface PinData {
   id: string;
@@ -27,6 +27,7 @@ export interface PinData {
   activeTaskId?: string;
   isPaused?: boolean;
   totalSeconds?: number;
+  itemColor?: string;
 }
 
 interface PinProps {
@@ -35,6 +36,7 @@ interface PinProps {
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
   onDragStart: (id: string, e: React.MouseEvent) => void;
+  onOpenInspector?: (id: string) => void;
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
@@ -119,9 +121,10 @@ function darkenColor(hex: string, percent: number): string {
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked, isSelected, onSelect, activeFocusTaskId, onStartFocus }: PinProps) {
+export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, activeFocusTaskId, onStartFocus }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [noteContent, setNoteContent] = useState(pin.content);
   const [labelContent, setLabelContent] = useState(pin.label || '');
   const [showImageInput, setShowImageInput] = useState(false);
@@ -230,10 +233,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
     }
   };
 
-  const handleColorChange = (color: string) => {
-    onUpdate(pin.id, { color });
-  };
-
   const handleBringToFront = () => {
     onUpdate(pin.id, { zIndex: Date.now() });
   };
@@ -268,15 +267,6 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Assign a stable random rotation on first render if not set
-  useEffect(() => {
-    if (pin.rotation === undefined) {
-      const tilt = (Math.random() - 0.5) * 6; // –3° to +3°
-      onUpdate(pin.id, { rotation: tilt });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const daysRemaining =
     pin.type === 'countdown' && pin.content
       ? calculateDaysRemaining(pin.content)
@@ -293,6 +283,7 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
   const bgColor = pin.color || defaultBg;
   const scrollColor = isDark ? '#3f3f46' : darkenColor(bgColor, 15);
   const scrollColorHover = isDark ? '#52525b' : darkenColor(bgColor, 25);
+  const textColorClass = getContrastColor(bgColor);
 
   return (
     <Resizable
@@ -332,6 +323,8 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
           onSelect();
           handleBringToFront();
         }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           backgroundColor: bgColor,
           boxShadow: isSelected 
@@ -365,15 +358,32 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
             onDragStart(pin.id, e);
           }}
           className="flex items-center justify-between px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0"
-          style={{ backgroundColor: getContrastColor(bgColor).includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+          style={{ backgroundColor: textColorClass.includes('slate-50') ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
         >
           <div className="flex items-center gap-1.5">
-            <GripVertical className={`w-3.5 h-3.5 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-400' : 'text-slate-400'}`} />
-              <span className={`text-xs capitalize tracking-wide font-medium ${getContrastColor(bgColor)}`}>
+            <GripVertical className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-400' : 'text-slate-400'}`} />
+              <span className={`text-xs capitalize tracking-wide font-medium ${textColorClass}`}>
               {pin.type.replace('-', ' ')}
             </span>
           </div>
           <div className="flex items-center gap-1">
+            <AnimatePresence>
+              {isHovered && !isLocked && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenInspector?.(pin.id);
+                  }}
+                  className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${textColorClass.includes('slate-50') ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
+                >
+                  <Settings2 className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+                </motion.button>
+              )}
+            </AnimatePresence>
             {!isLocked && (
               <button
                 onMouseDown={(e) => e.stopPropagation()}
@@ -381,9 +391,9 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                   e.stopPropagation();
                   onDelete(pin.id);
                 }}
-                className={`w-5 h-5 flex items-center justify-center rounded-full transition-colors ${getContrastColor(bgColor).includes('slate-50') ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
+                className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${textColorClass.includes('slate-50') ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
               >
-                <X className={`w-3 h-3 ${getContrastColor(bgColor).includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
+                <X className={`w-3.5 h-3.5 ${textColorClass.includes('slate-50') ? 'text-slate-300' : 'text-slate-500'}`} />
               </button>
             )}
           </div>
@@ -501,10 +511,10 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
           {pin.type === 'countdown' && (
             <div className="h-full flex flex-col items-center justify-center gap-1">
               <div
-                className="text-5xl tabular-nums"
+                className="text-7xl font-black tabular-nums tracking-tighter"
                 style={{ 
-                  color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : pinHeadColor), 
-                  fontWeight: 700 
+                  color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#FFFFFF' : '#334155'),
+                  fontFamily: pin.fontFamily || 'system-ui'
                 }}
               >
                 {daysRemaining}
@@ -592,7 +602,11 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, isDragging 
                     </button>
                     <span 
                       className={`text-sm flex-1 leading-snug ${todo.completed ? 'opacity-40 line-through' : ''}`}
-                      style={{ color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#F1F5F9' : '#1E293B') }}
+                      style={{ 
+                        color: pin.textColor || (getContrastColor(bgColor).includes('slate-50') ? '#F1F5F9' : '#1E293B'),
+                        fontFamily: pin.fontFamily || 'system-ui',
+                        fontSize: pin.fontSize || '14px'
+                      }}
                     >
                       {todo.text}
                     </span>
