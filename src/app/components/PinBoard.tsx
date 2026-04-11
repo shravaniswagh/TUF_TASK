@@ -197,62 +197,26 @@ export function PinBoard({ boardId }: { boardId: string }) {
     fetchPins();
   }, [boardId]);
 
-  // ── Persistent Save (Unified + beforeunload safety net) ──────
-  const latestStateRef = useRef({ pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded });
-  latestStateRef.current = { pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded };
-
-  const doSave = useCallback(() => {
-    const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh, hasLoaded: hl } = latestStateRef.current;
-    if (!hl) return;
-    const cleaned = p.map(pin => {
-      const c: any = {};
-      Object.entries(pin).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
-      return c;
-    });
-    setDoc(doc(db, 'boards', boardId), {
-      pins: cleaned,
-      boardBackgroundColor: bc,
-      theme: mt,
-      isLocked: il,
-      lastUpdated: new Date().toISOString(),
-      focusHistory: fh,
-    }, { merge: true }).catch(console.error);
-  }, [boardId]);
-
-  // Debounced save on any state change
+  // Persistent Save
   useEffect(() => {
     if (!hasLoaded) return;
-    const timer = setTimeout(doSave, 800);
-    return () => clearTimeout(timer);
-  }, [pins, hasLoaded, boardColor, manualTheme, isLocked, focusHistory, doSave]);
-
-  // CRITICAL: Save immediately when user is leaving/refreshing the page
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      doSave();
-      // Also use sendBeacon as a last resort for reliability
-      const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh } = latestStateRef.current;
-      const cleaned = p.map(pin => {
+    const timer = setTimeout(() => {
+      const cleaned = pins.map(p => {
         const c: any = {};
-        Object.entries(pin).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
+        Object.entries(p).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
         return c;
       });
-      const payload = JSON.stringify({
+      setDoc(doc(db, 'boards', boardId), {
         pins: cleaned,
-        boardBackgroundColor: bc,
-        theme: mt,
-        isLocked: il,
+        boardBackgroundColor: boardColor,
+        theme: manualTheme, // Save forced theme to database
+        isLocked: isLocked, // Save lock state to database
         lastUpdated: new Date().toISOString(),
-        focusHistory: fh,
-      });
-      // sendBeacon is more reliable during page unload than fetch/XHR
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon(`https://firestore.googleapis.com/v1/projects/`, payload);
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [doSave]);
+        focusHistory: focusHistory, // Save focus history to database
+      }, { merge: true }).catch(console.error);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked, focusHistory]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
   const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
