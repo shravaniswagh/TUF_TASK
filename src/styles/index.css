@@ -36,3 +36,10 @@
 .custom-scrollbar:hover {
   scrollbar-color: var(--scrollbar-color, rgba(0, 0, 0, 0.1)) transparent;
 }
+
+/* Touch & Gesture Optimization */
+.custom-scrollbar {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
