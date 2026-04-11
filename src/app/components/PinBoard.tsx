@@ -694,7 +694,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 12, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-56 mb-1 overflow-y-auto max-h-[min(520px,calc(100vh-140px))] custom-scrollbar"
+                  className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-56 mb-1 overflow-y-auto max-h-[calc(100vh-140px)] custom-scrollbar"
                 >
                   <AnimatePresence mode="wait">
                     {menuView === 'main' ? (

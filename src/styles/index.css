@@ -13,7 +13,7 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: transparent;
+  background-color: rgba(100, 116, 139, 0.2);
   border-radius: 20px;
   transition: background-color 0.2s;
 }
