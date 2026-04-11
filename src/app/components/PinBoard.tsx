@@ -297,11 +297,22 @@ export function PinBoard({ boardId }: { boardId: string }) {
     if (!dragging || isLocked) return;
     localLastUpdatedRef.current = Date.now();
     setPins(prev => {
-      const next = prev.map(p =>
-        p.id === dragging.id
-          ? { ...p, x: e.clientX - dragging.offsetX, y: e.clientY - dragging.offsetY }
-          : p
-      );
+      const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+
+      const next = prev.map(p => {
+        if (p.id === dragging.id) {
+          let newX = e.clientX - dragging.offsetX;
+          let newY = e.clientY - dragging.offsetY;
+          
+          // Clamp to screen boundaries
+          newX = Math.max(0, Math.min(newX, screenWidth - p.width));
+          newY = Math.max(0, Math.min(newY, screenHeight - p.height));
+
+          return { ...p, x: newX, y: newY };
+        }
+        return p;
+      });
       masterStateRef.current.pins = next;
       return next;
     });
@@ -325,7 +336,10 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const findSafePosition = (w: number, h: number) => {
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
     const padding = 60;
+    const leftBound = Math.max(padding, screenWidth / 2);
+
     let x = screenWidth - w - 80;
     let y = 100;
 
@@ -338,11 +352,16 @@ export function PinBoard({ boardId }: { boardId: string }) {
     let attempts = 0;
     while (isColliding(x, y) && attempts < 30) {
       y += 80;
-      if (y > 700) {
+      if (y > screenHeight - h - 100) {
         y = 100;
         x -= (w + 40);
       }
-      if (x < padding) break;
+      if (x < leftBound) {
+        // If screen is full on the right, randomly overlap on the right instead of going left
+        x = leftBound + Math.random() * (screenWidth - leftBound - w - padding);
+        y = 100 + Math.random() * 200;
+        break;
+      }
       attempts++;
     }
 
