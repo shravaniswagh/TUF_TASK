@@ -56,6 +56,10 @@ export function FocusSummaryPin({
       }}
       minWidth={200}
       minHeight={150}
+      enable={isLocked ? false : {
+        top: false, right: true, bottom: true, left: false,
+        topRight: false, bottomRight: true, bottomLeft: false, topLeft: false,
+      }}
       style={{
         position: 'absolute',
         left: pin.x,

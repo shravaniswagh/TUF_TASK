@@ -295,7 +295,14 @@ export function PinBoard({ boardId }: { boardId: string }) {
     });
   }, [dragging, isLocked]);
 
-  const handleMouseUp = useCallback(() => setDragging(null), []);
+  const handleMouseUp = useCallback(() => {
+    setDragging(prev => {
+      if (prev) {
+        setTimeout(doSave, 0);
+      }
+      return null;
+    });
+  }, [doSave]);
 
   const bringToFront = useCallback((id: string) => {
     setPins(prev => prev.map(p => p.id === id ? { ...p, zIndex: maxZ + 1 } : p));

@@ -313,8 +313,8 @@ export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspe
         transition: isDragging ? 'none' : 'opacity 0.15s, transform 0.2s',
       }}
       enable={isLocked ? false : {
-        top: true, right: true, bottom: true, left: true,
-        topRight: true, bottomRight: true, bottomLeft: true, topLeft: true,
+        top: false, right: true, bottom: true, left: false,
+        topRight: false, bottomRight: true, bottomLeft: false, topLeft: false,
       }}
     >
       <motion.div

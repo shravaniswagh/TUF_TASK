@@ -24,7 +24,7 @@ interface StopwatchPinProps {
   activeTaskId?: string | null;
   activeTaskName?: string | null;
   activeTaskColor?: string | null;
-  onFocusIncrement?: (taskId?: string | null) => void;
+  onFocusIncrement?: (taskId?: string | null, amount?: number) => void;
   allPins?: PinData[];
 }
 
@@ -207,7 +207,10 @@ export function StopwatchPin({
     >
       <Resizable
         size={{ width: isFullscreen ? '100%' : pin.width, height: isFullscreen ? '100%' : pin.height }}
-        enable={(!isFullscreen && !isLocked) ? undefined : false}
+        enable={(!isFullscreen && !isLocked) ? {
+          top: false, right: true, bottom: true, left: false,
+          topRight: false, bottomRight: true, bottomLeft: false, topLeft: false,
+        } : false}
         onResizeStop={(_e, _dir, _ref, d) => {
           if (isLocked || isFullscreen) return;
           onUpdate(pin.id, { width: pin.width + d.width, height: pin.height + d.height });
