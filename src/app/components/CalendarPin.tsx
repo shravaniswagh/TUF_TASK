@@ -28,7 +28,8 @@ interface CalendarPinProps {
   boardId: string;
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
-  onDragStart: (id: string, e: React.MouseEvent) => void;
+  onDragStart: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+  onPinchStart: (id: string, e: React.TouchEvent) => void;
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
@@ -121,6 +122,11 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
           onSelect();
           handleBringToFront();
         }}
+        onTouchStart={(e) => {
+          if (e.touches.length === 2) {
+            onPinchStart(pin.id, e);
+          }
+        }}
         style={{
           backgroundColor: isDark ? '#ffffff' : (pin.color || '#ffffff'),
           boxShadow: isSelected
@@ -140,6 +146,11 @@ export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onO
             onMouseDown={(e) => {
               if (isLocked) return;
               e.preventDefault();
+              e.stopPropagation();
+              onDragStart(pin.id, e);
+            }}
+            onTouchStart={(e) => {
+              if (isLocked || e.touches.length > 1) return;
               e.stopPropagation();
               onDragStart(pin.id, e);
             }}

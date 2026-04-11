@@ -10,7 +10,8 @@ interface StopwatchPinProps {
   pin: PinData;
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
-  onDragStart: (id: string, e: React.MouseEvent) => void;
+  onDragStart: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+  onPinchStart: (id: string, e: React.TouchEvent) => void;
   isDragging?: boolean;
   isDark: boolean;
   isLocked: boolean;
@@ -229,6 +230,11 @@ export function StopwatchPin({
               onBringToFront(pin.id);
             }
           }}
+          onTouchStart={(e) => {
+            if (e.touches.length === 2) {
+              onPinchStart(pin.id, e);
+            }
+          }}
           style={{
             backgroundColor: bgColor,
             boxShadow: isFullscreen ? 'none' : (isSelected ? '0 32px 64px rgba(0,0,0,0.2)' : '0 2px 12px rgba(0,0,0,0.07)'),
@@ -253,6 +259,11 @@ export function StopwatchPin({
                     onMouseDown={(e) => {
                       if (isLocked) return;
                       e.preventDefault();
+                      e.stopPropagation();
+                      onDragStart(pin.id, e);
+                    }}
+                    onTouchStart={(e) => {
+                      if (isLocked || e.touches.length > 1) return;
                       e.stopPropagation();
                       onDragStart(pin.id, e);
                     }}

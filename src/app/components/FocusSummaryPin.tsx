@@ -9,7 +9,8 @@ interface FocusSummaryPinProps {
   pin: PinData;
   onUpdate: (id: string, updates: Partial<PinData>) => void;
   onDelete: (id: string) => void;
-  onDragStart: (id: string, e: React.MouseEvent) => void;
+  onDragStart: (id: string, e: React.MouseEvent | React.TouchEvent) => void;
+  onPinchStart: (id: string, e: React.TouchEvent) => void;
   onOpenInspector: (id: string) => void;
   isDragging?: boolean;
   isDark: boolean;
@@ -73,6 +74,11 @@ export function FocusSummaryPin({
           onSelect();
           onBringToFront(pin.id);
         }}
+        onTouchStart={(e) => {
+          if (e.touches.length === 2) {
+            onPinchStart(pin.id, e);
+          }
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
@@ -106,6 +112,11 @@ export function FocusSummaryPin({
             onMouseDown={(e) => {
               if (isLocked) return;
               e.preventDefault();
+              e.stopPropagation();
+              onDragStart(pin.id, e);
+            }}
+            onTouchStart={(e) => {
+              if (isLocked || e.touches.length > 1) return;
               e.stopPropagation();
               onDragStart(pin.id, e);
             }}

@@ -39,8 +39,12 @@ import { auth } from '../../firebase';
 
 interface DragState {
   id: string;
-  offsetX: number;
-  offsetY: number;
+  type: 'move' | 'pinch';
+  offsetX?: number;
+  offsetY?: number;
+  initialDistance?: number;
+  initialWidth?: number;
+  initialHeight?: number;
 }
 
 /**
@@ -286,24 +290,50 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, [doSave]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
-  const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
+  const onDragStart = useCallback((id: string, e: React.MouseEvent | React.TouchEvent) => {
     if (isLocked) return;
     const pin = pins.find(p => p.id === id);
     if (!pin) return;
-    setDragging({ id, offsetX: e.clientX - pin.x, offsetY: e.clientY - pin.y });
+    
+    // For MouseEvents, we use standard move logic
+    if (!('touches' in e)) {
+      setDragging({ id, type: 'move', offsetX: e.clientX - pin.x, offsetY: e.clientY - pin.y });
+      return;
+    }
+
+    // For TouchEvents
+    const touch = e.touches[0];
+    setDragging({ id, type: 'move', offsetX: touch.clientX - pin.x, offsetY: touch.clientY - pin.y });
   }, [pins, isLocked]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging || isLocked) return;
+  const onPinchStart = useCallback((id: string, e: React.TouchEvent) => {
+    if (isLocked || e.touches.length < 2) return;
+    const pin = pins.find(p => p.id === id);
+    if (!pin) return;
+
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    const distance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+
+    setDragging({ 
+      id, 
+      type: 'pinch', 
+      initialDistance: distance,
+      initialWidth: pin.width,
+      initialHeight: pin.height
+    });
+  }, [pins, isLocked]);
+
+  const moveAt = (id: string, clientX: number, clientY: number, offsetX: number, offsetY: number) => {
     localLastUpdatedRef.current = Date.now();
     setPins(prev => {
       const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
       const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
 
       const next = prev.map(p => {
-        if (p.id === dragging.id) {
-          let newX = e.clientX - dragging.offsetX;
-          let newY = e.clientY - dragging.offsetY;
+        if (p.id === id) {
+          let newX = clientX - offsetX;
+          let newY = clientY - offsetY;
           
           // Clamp to screen boundaries
           newX = Math.max(0, Math.min(newX, screenWidth - p.width));
@@ -316,9 +346,47 @@ export function PinBoard({ boardId }: { boardId: string }) {
       masterStateRef.current.pins = next;
       return next;
     });
+  };
+
+  const resizeAt = (id: string, scale: number) => {
+    if (!dragging || dragging.type !== 'pinch' || !dragging.initialWidth || !dragging.initialHeight) return;
+    localLastUpdatedRef.current = Date.now();
+    setPins(prev => {
+      const next = prev.map(p => {
+        if (p.id === id) {
+          const newWidth = Math.max(200, dragging.initialWidth! * scale);
+          const newHeight = Math.max(150, dragging.initialHeight! * scale);
+          return { ...p, width: newWidth, height: newHeight };
+        }
+        return p;
+      });
+      masterStateRef.current.pins = next;
+      return next;
+    });
+  };
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging || isLocked || dragging.type !== 'move') return;
+    moveAt(dragging.id, e.clientX, e.clientY, dragging.offsetX!, dragging.offsetY!);
   }, [dragging, isLocked]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragging || isLocked) return;
+
+    if (e.touches.length === 2 && dragging.type === 'pinch') {
+      if (e.cancelable) e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const distance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      const scale = distance / (dragging.initialDistance || 1);
+      resizeAt(dragging.id, scale);
+    } else if (e.touches.length === 1 && dragging.type === 'move') {
+      const touch = e.touches[0];
+      moveAt(dragging.id, touch.clientX, touch.clientY, dragging.offsetX!, dragging.offsetY!);
+    }
+  }, [dragging, isLocked]);
+
+  const handleInteractionEnd = useCallback(() => {
     if (dragging) {
       setTimeout(doSave, 0);
     }
@@ -506,8 +574,11 @@ export function PinBoard({ boardId }: { boardId: string }) {
     <div
       ref={boardRef}
       onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onMouseUp={handleInteractionEnd}
+      onMouseLeave={handleInteractionEnd}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleInteractionEnd}
+      onTouchCancel={handleInteractionEnd}
       onClick={(e) => {
         // Click background to deselect
         if (e.target === boardRef.current) {
@@ -555,7 +626,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 onSelect={() => setSelectedPinId(pin.id)}
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
                 onBringToFront={bringToFront}
-                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+                onDragStart={onDragStart} 
+                onPinchStart={onPinchStart}
+                isDragging={dragging?.id === pin.id && dragging.type === 'move'} />
             );
           } else if (pin.type === 'stopwatch') {
             return (
@@ -573,7 +646,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 activeTaskName={activeTaskInfo?.text}
                 activeTaskColor={activeTaskInfo?.color}
                 onFocusIncrement={handleFocusIncrement}
-                onDragStart={onDragStart} isDragging={dragging?.id === pin.id}
+                onDragStart={onDragStart} 
+                onPinchStart={onPinchStart}
+                isDragging={dragging?.id === pin.id && dragging.type === 'move'}
                 allPins={pins} />
             );
           } else if (pin.type === 'focus-summary') {
@@ -586,7 +661,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 onOpenInspector={() => setInspectorPinId(prev => prev === pin.id ? null : pin.id)}
                 onBringToFront={bringToFront}
                 dailyTotal={dailyTotal}
-                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+                onDragStart={onDragStart} 
+                onPinchStart={onPinchStart}
+                isDragging={dragging?.id === pin.id && dragging.type === 'move'} />
             );
           } else if (pin.type === 'weekly-analysis') {
             return (
@@ -600,7 +677,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 weeklyData={weeklyData}
                 focusHistory={focusHistory}
                 allPins={pins}
-                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+                onDragStart={onDragStart} 
+                onPinchStart={onPinchStart}
+                isDragging={dragging?.id === pin.id && dragging.type === 'move'} />
             );
           } else {
             return (
@@ -613,7 +692,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 onBringToFront={bringToFront}
                 activeFocusTaskId={activeFocusTaskId}
                 onStartFocus={handleToggleFocus}
-                onDragStart={onDragStart} isDragging={dragging?.id === pin.id} />
+                onDragStart={onDragStart} 
+                onPinchStart={onPinchStart}
+                isDragging={dragging?.id === pin.id && dragging.type === 'move'} />
             );
           }
         })}
