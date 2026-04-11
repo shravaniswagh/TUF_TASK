@@ -23,6 +23,7 @@ interface StopwatchPinProps {
   onToggleFocus?: (taskId: string | null) => void;
   activeTaskId?: string | null;
   activeTaskName?: string | null;
+  activeTaskColor?: string | null;
   onFocusIncrement?: (taskId?: string | null) => void;
   allPins?: PinData[];
 }
@@ -51,7 +52,7 @@ function formatTime(totalSeconds: number) {
 
 export function StopwatchPin({ 
   pin, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked, isSelected, onSelect, onOpenInspector, onBringToFront, 
-  onToggleFullscreen, isFullscreen = false, onToggleFocus, activeTaskId, activeTaskName, onFocusIncrement, allPins = [] 
+  onToggleFullscreen, isFullscreen = false, onToggleFocus, activeTaskId, activeTaskName, activeTaskColor, onFocusIncrement, allPins = [] 
 }: StopwatchPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showTaskSelector, setShowTaskSelector] = useState(false);

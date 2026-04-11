@@ -148,6 +148,21 @@ export function PinBoard({ boardId }: { boardId: string }) {
     localStorage.setItem('theme', manualTheme); // Also sync with next-themes if it exists
   }, [manualTheme, mounted, isDark]);
 
+  // Derived Active Task Info for all components
+  const activeTaskInfo = useMemo(() => {
+    if (!activeFocusTaskId) return null;
+    for (const p of pins) {
+      if (p.type === 'todo' || p.type === 'daily-tasks') {
+        try {
+          const todos = JSON.parse(p.content || '[]');
+          const t = todos.find((t: any) => t.id === activeFocusTaskId);
+          if (t) return { text: t.text, color: t.color || p.color };
+        } catch (e) {}
+      }
+    }
+    return null;
+  }, [pins, activeFocusTaskId]);
+
   /* ── Load & Sync ─────────────────────────────────────────────── */
   useEffect(() => {
     const fetchPins = async () => {
@@ -183,24 +198,38 @@ export function PinBoard({ boardId }: { boardId: string }) {
   }, [boardId]);
 
   // Persistent Save
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (!hasLoaded) return;
-    const timer = setTimeout(() => {
+    
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    saveTimeoutRef.current = setTimeout(() => {
+      // Create a clean copy of pins to avoid serializing internal state
       const cleaned = pins.map(p => {
         const c: any = {};
-        Object.entries(p).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
+        Object.keys(p).forEach(k => {
+          // @ts-ignore
+          const v = p[k];
+          if (v !== undefined) c[k] = v;
+        });
         return c;
       });
+
       setDoc(doc(db, 'boards', boardId), {
         pins: cleaned,
         boardBackgroundColor: boardColor,
-        theme: manualTheme, // Save forced theme to database
-        isLocked: isLocked, // Save lock state to database
+        theme: manualTheme,
+        isLocked: isLocked,
         lastUpdated: new Date().toISOString(),
-        focusHistory: focusHistory, // Save focus history to database
+        focusHistory: focusHistory,
       }, { merge: true }).catch(console.error);
-    }, 1200);
-    return () => clearTimeout(timer);
+    }, 1500);
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
   }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked, focusHistory]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
@@ -373,14 +402,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
                 isFullscreen={false}
                 onToggleFocus={(tid) => setActiveFocusTaskId(tid)}
                 activeTaskId={activeFocusTaskId}
-                activeTaskName={pins.find(p => p.type === 'todo' || p.type === 'daily-tasks')?.content ? 
-                  (() => {
-                    try {
-                      const todos = JSON.parse(pins.find(p => p.type === 'todo')?.content || '[]');
-                      const t = todos.find((t: any) => t.id === activeFocusTaskId);
-                      return t ? t.text : null;
-                    } catch(e) { return null; }
-                  })() : null}
+                activeTaskName={activeTaskInfo?.text}
+                activeTaskColor={activeTaskInfo?.color}
                 onFocusIncrement={(tid = activeFocusTaskId) => {
                   if (!tid) return;
                   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD local
@@ -466,6 +489,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
                         onToggleFullscreen={(fs) => toggleFullscreen(pin.id, fs)}
                         isFullscreen={true}
                         activeTaskId={activeFocusTaskId}
+                        activeTaskName={activeTaskInfo?.text}
+                        activeTaskColor={activeTaskInfo?.color}
                         onFocusIncrement={(tid = activeFocusTaskId) => {
                           if (!tid) return;
                           const today = new Date().toISOString().split('T')[0];

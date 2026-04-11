@@ -182,15 +182,13 @@ export function WeeklyAnalysisPin({
         </div>
 
         <div className="flex-1 flex flex-col p-6 overflow-y-auto custom-scrollbar">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-indigo-500" />
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${textColorClass}`}>Weekly Performance</span>
-              </div>
-              <div className={`text-[11px] font-bold tabular-nums ${textColorClass}`}>
-                {totalH}h {totalM}m <span className="opacity-50">{totalS}s</span>
-              </div>
+          <div className="flex items-center justify-between w-full mb-6">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-indigo-500" />
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${textColorClass}`}>Weekly Performance</span>
+            </div>
+            <div className={`text-[11px] font-black tabular-nums ${textColorClass}`}>
+              {totalH}h {totalM}m <span className="opacity-50">{totalS}s</span>
             </div>
           </div>
 
