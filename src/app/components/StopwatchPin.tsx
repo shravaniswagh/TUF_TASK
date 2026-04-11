@@ -176,9 +176,10 @@ export function StopwatchPin({
           {/* Internal Content Wrapper to fix clipping */}
           <div className={`w-full h-full flex flex-col overflow-hidden ${isFullscreen ? 'rounded-none' : 'rounded-xl'}`}>
             {!isFullscreen && (
-              <div
-                className="flex items-center justify-between px-5 pt-5 pb-0 shrink-0"
-              >
+                <div
+                  className="flex items-center justify-between px-3 pt-3 pb-0 shrink-0"
+                  style={{ backgroundColor: clockTextColor === '#ffffff' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.03)' }}
+                >
                 <div 
                   onMouseDown={(e) => {
                     if (isLocked) return;
@@ -186,9 +187,9 @@ export function StopwatchPin({
                     e.stopPropagation();
                     onDragStart(pin.id, e);
                   }}
-                  className="flex items-center gap-2 cursor-grab active:cursor-grabbing grow"
+                  className="flex items-center gap-1.5 cursor-grab active:cursor-grabbing grow"
                 >
-                  <GripVertical className="w-4 h-4 text-slate-400" />
+                  <GripVertical className={`w-3.5 h-3.5 text-slate-400`} />
                   <span className={`text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-900'}`}>Stopwatch</span>
                 </div>
                 
@@ -206,7 +207,7 @@ export function StopwatchPin({
                             onClick={(e) => { e.stopPropagation(); onOpenInspector(pin.id); }}
                             className="w-8 h-8 flex items-center justify-center rounded-xl bg-black/5 hover:bg-black/10 transition-all"
                           >
-                            <Settings2 className={`w-4 h-4 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`} />
+                            <Settings2 className={`w-3.5 h-3.5 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-600'}`} />
                           </button>
                         </motion.div>
                       )}
@@ -214,9 +215,9 @@ export function StopwatchPin({
                    {!isLocked && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete(pin.id); }}
-                      className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-black/10 transition-colors"
+                      className={`w-6 h-6 flex items-center justify-center rounded-full transition-colors ${clockTextColor === '#ffffff' ? 'hover:bg-white/20' : 'hover:bg-black/10'}`}
                     >
-                      <X className={`w-4 h-4 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-500'}`} />
+                      <X className={`w-3.5 h-3.5 ${clockTextColor === '#ffffff' ? 'text-white' : 'text-slate-500'}`} />
                     </button>
                    )}
                 </div>

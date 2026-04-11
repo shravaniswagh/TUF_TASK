@@ -33,12 +33,16 @@ export const THEME_CONFIG = {
 
   // ── Pin Header Colors ──────────────────────────────────────────
   pinHeads: {
-    note: '#F59E0B',
-    image: '#10B981',
-    countdown: '#6366F1',
-    calendar: '#6366F1',
-    todo: '#10B981',
-    'daily-tasks': '#6366F1', // Professional Indigo instead of Rose
+    note: '#F59E0B',     // Amber
+    image: '#10B981',    // Emerald
+    countdown: '#F43F5E', // Rose
+    calendar: '#0EA5E9',  // Sky
+    todo: '#14B8A6',     // Teal
+    'daily-tasks': '#8B5CF6', // Violet
+    clock: '#6366F1',    // Indigo
+    stopwatch: '#3B82F6', // Blue
+    'focus-summary': '#F97316', // Orange
+    'weekly-analysis': '#22C55E', // Green
   },
 
   // ── Pin Palette (The colors in the palette menu) ───────────────
