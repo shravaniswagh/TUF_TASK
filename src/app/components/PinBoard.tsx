@@ -197,26 +197,51 @@ export function PinBoard({ boardId }: { boardId: string }) {
     fetchPins();
   }, [boardId]);
 
-  // Persistent Save
+  // ── Unified Persistence Engine (Triple-Lock) ──────────────────
+  const latestStateRef = useRef({ pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded });
+  latestStateRef.current = { pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded };
+
+  const doSave = useCallback(() => {
+    const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh, hasLoaded: hl } = latestStateRef.current;
+    if (!hl) return;
+
+    const cleaned = p.map(pin => {
+      const c: any = {};
+      Object.entries(pin).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
+      return c;
+    });
+
+    console.log('[SAVE] 💾 Syncing workspace to cloud...');
+    setDoc(doc(db, 'boards', boardId), {
+      pins: cleaned,
+      boardBackgroundColor: bc,
+      theme: mt,
+      isLocked: il,
+      lastUpdated: new Date().toISOString(),
+      focusHistory: fh,
+    }, { merge: true })
+      .then(() => console.log('[SAVE] ✅ Success: Workspace persistent.'))
+      .catch((err) => console.error('[SAVE] ❌ Error: Cloud sync failed:', err));
+  }, [boardId]);
+
+  // Default Debounced Save (500ms)
   useEffect(() => {
     if (!hasLoaded) return;
-    const timer = setTimeout(() => {
-      const cleaned = pins.map(p => {
-        const c: any = {};
-        Object.entries(p).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
-        return c;
-      });
-      setDoc(doc(db, 'boards', boardId), {
-        pins: cleaned,
-        boardBackgroundColor: boardColor,
-        theme: manualTheme,
-        isLocked: isLocked,
-        lastUpdated: new Date().toISOString(),
-        focusHistory: focusHistory,
-      }, { merge: true }).catch(console.error);
-    }, 1200);
+    const timer = setTimeout(doSave, 500);
     return () => clearTimeout(timer);
-  }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked, focusHistory]);
+  }, [pins, hasLoaded, boardColor, manualTheme, isLocked, focusHistory, doSave]);
+
+  // Fail-Safe: Flush on Page Refresh or Unmount
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      doSave();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      doSave(); // Flush on unmount
+    };
+  }, [doSave]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
   const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
