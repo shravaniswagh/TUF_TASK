@@ -197,53 +197,62 @@ export function PinBoard({ boardId }: { boardId: string }) {
     fetchPins();
   }, [boardId]);
 
-  // 1. Board Configuration Save (Pins, Theme, Color)
-  const configSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // ── Persistent Save (Unified + beforeunload safety net) ──────
+  const latestStateRef = useRef({ pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded });
+  latestStateRef.current = { pins, boardColor, manualTheme, isLocked, focusHistory, hasLoaded };
+
+  const doSave = useCallback(() => {
+    const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh, hasLoaded: hl } = latestStateRef.current;
+    if (!hl) return;
+    const cleaned = p.map(pin => {
+      const c: any = {};
+      Object.entries(pin).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
+      return c;
+    });
+    setDoc(doc(db, 'boards', boardId), {
+      pins: cleaned,
+      boardBackgroundColor: bc,
+      theme: mt,
+      isLocked: il,
+      lastUpdated: new Date().toISOString(),
+      focusHistory: fh,
+    }, { merge: true }).catch(console.error);
+  }, [boardId]);
+
+  // Debounced save on any state change
   useEffect(() => {
     if (!hasLoaded) return;
-    if (configSaveTimeoutRef.current) clearTimeout(configSaveTimeoutRef.current);
+    const timer = setTimeout(doSave, 800);
+    return () => clearTimeout(timer);
+  }, [pins, hasLoaded, boardColor, manualTheme, isLocked, focusHistory, doSave]);
 
-    configSaveTimeoutRef.current = setTimeout(() => {
-      const cleanedPins = pins.map(p => {
+  // CRITICAL: Save immediately when user is leaving/refreshing the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      doSave();
+      // Also use sendBeacon as a last resort for reliability
+      const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh } = latestStateRef.current;
+      const cleaned = p.map(pin => {
         const c: any = {};
-        Object.keys(p).forEach(k => {
-          // @ts-ignore
-          const v = p[k];
-          if (v !== undefined) c[k] = v;
-        });
+        Object.entries(pin).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
         return c;
       });
-
-      setDoc(doc(db, 'boards', boardId), {
-        pins: cleanedPins,
-        boardBackgroundColor: boardColor,
-        theme: manualTheme,
-        isLocked: isLocked,
+      const payload = JSON.stringify({
+        pins: cleaned,
+        boardBackgroundColor: bc,
+        theme: mt,
+        isLocked: il,
         lastUpdated: new Date().toISOString(),
-      }, { merge: true }).catch(console.error);
-    }, 1500);
-
-    return () => {
-      if (configSaveTimeoutRef.current) clearTimeout(configSaveTimeoutRef.current);
+        focusHistory: fh,
+      });
+      // sendBeacon is more reliable during page unload than fetch/XHR
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon(`https://firestore.googleapis.com/v1/projects/`, payload);
+      }
     };
-  }, [pins, hasLoaded, boardId, boardColor, manualTheme, isLocked]);
-
-  // 2. Focus History Save (Analytics) - Less frequent to prevent blocking config saves
-  const statsSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  useEffect(() => {
-    if (!hasLoaded) return;
-    if (statsSaveTimeoutRef.current) clearTimeout(statsSaveTimeoutRef.current);
-
-    statsSaveTimeoutRef.current = setTimeout(() => {
-      setDoc(doc(db, 'boards', boardId), {
-        focusHistory: focusHistory,
-      }, { merge: true }).catch(console.error);
-    }, 10000); // 10 seconds for stats
-
-    return () => {
-      if (statsSaveTimeoutRef.current) clearTimeout(statsSaveTimeoutRef.current);
-    };
-  }, [focusHistory, hasLoaded, boardId]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [doSave]);
 
   /* ── Interaction Handlers ───────────────────────────────────── */
   const onDragStart = useCallback((id: string, e: React.MouseEvent) => {
