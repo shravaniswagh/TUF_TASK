@@ -37,7 +37,7 @@ function getContrastColor(hexColor?: string) {
 }
 
 export function FocusSummaryPin({ 
-  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, onBringToFront, dailyTotal 
+  pin, onUpdate, onDelete, onDragStart, onPinchStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, onBringToFront, dailyTotal 
 }: FocusSummaryPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const hours = Math.floor(dailyTotal / 3600);

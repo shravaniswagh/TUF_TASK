@@ -179,6 +179,9 @@ export function PinBoard({ boardId }: { boardId: string }) {
   // Generate a unique client session ID to perfectly ignore our own Firestore server acknowledgments
   const clientIdRef = useRef(Math.random().toString(36).substring(2, 10));
 
+  // Flag to differentiate between "Sync from Cloud" and "User Interaction"
+  const hasLocalChangesRef = useRef(false);
+
   // The poisonous useEffect that redundantly overwrote masterStateRef.current has been removed.
   // We rely fully on synchronous mutation of the ref during state changes (setPins, setBoardColor, etc.)
   // This prevents React concurrent rendering closures from replacing fresh ref state with stale state.
@@ -211,6 +214,8 @@ export function PinBoard({ boardId }: { boardId: string }) {
         }
 
         // Batch updates to local state
+        console.log('[SYNC] 📥 Remote update received. Pins:', data.pins?.length || 0);
+        
         if (data.pins) setPins(data.pins);
         if (data.boardBackgroundColor) setBoardColor(data.boardBackgroundColor);
         if (data.theme) setManualTheme(data.theme);
@@ -248,13 +253,19 @@ export function PinBoard({ boardId }: { boardId: string }) {
     const { pins: p, boardColor: bc, manualTheme: mt, isLocked: il, focusHistory: fh, hasLoaded: hl, activeFocusTaskId: af } = masterStateRef.current;
     if (!hl) return;
 
+    // ONLY SAVE IF WE HAVE LOCAL CHANGES
+    if (!hasLocalChangesRef.current) {
+      console.log('[SAVE] 🧊 No local changes. Skipping redundant write.');
+      return;
+    }
+
     const cleaned = p.map(pin => {
       const c: any = {};
       Object.entries(pin).forEach(([k, v]) => { if (v !== undefined) c[k] = v; });
       return c;
     });
 
-    console.log('[SAVE] 💾 Syncing workspace to cloud...');
+    console.log('[SAVE] 💾 Syncing local changes to cloud...');
     setDoc(doc(db, 'boards', boardId), {
       pins: cleaned,
       boardBackgroundColor: bc,
@@ -266,7 +277,10 @@ export function PinBoard({ boardId }: { boardId: string }) {
       focusHistory: fh,
       activeFocusTaskId: af,
     }, { merge: true })
-      .then(() => console.log('[SAVE] ✅ Success: Workspace persistent.'))
+      .then(() => {
+        console.log('[SAVE] ✅ Success: Cloud persistent.');
+        hasLocalChangesRef.current = false; // Reset after success
+      })
       .catch((err) => console.error('[SAVE] ❌ Error: Cloud sync failed:', err));
   }, [boardId]);
 
@@ -326,6 +340,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const moveAt = (id: string, clientX: number, clientY: number, offsetX: number, offsetY: number) => {
     localLastUpdatedRef.current = Date.now();
+    hasLocalChangesRef.current = true;
     setPins(prev => {
       const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
       const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
@@ -351,6 +366,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const resizeAt = (id: string, scale: number) => {
     if (!dragging || dragging.type !== 'pinch' || !dragging.initialWidth || !dragging.initialHeight) return;
     localLastUpdatedRef.current = Date.now();
+    hasLocalChangesRef.current = true;
     setPins(prev => {
       const next = prev.map(p => {
         if (p.id === id) {
@@ -438,6 +454,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const addPin = (type: PinData['type']) => {
     localLastUpdatedRef.current = Date.now();
+    hasLocalChangesRef.current = true;
     const maxZ = pins.reduce((m, p) => Math.max(m, p.zIndex ?? 0), 0);
     const width = type === 'calendar' ? 480 : (type === 'stopwatch' ? 240 : 300);
     const height = type === 'calendar' ? 600 : (type === 'stopwatch' ? 220 : 200);
@@ -468,6 +485,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const updatePin = useCallback((id: string, updates: Partial<PinData>) => {
     localLastUpdatedRef.current = Date.now();
+    hasLocalChangesRef.current = true;
     setPins(prev => {
       const next = prev.map(p => p.id === id ? { ...p, ...updates } : p);
       masterStateRef.current.pins = next;
@@ -477,6 +495,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const deletePin = useCallback((id: string) => {
     localLastUpdatedRef.current = Date.now();
+    hasLocalChangesRef.current = true;
     setPins(prev => {
       const next = prev.filter(p => p.id !== id);
       masterStateRef.current.pins = next;
@@ -499,6 +518,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
   const handleFocusIncrement = useCallback((tid: string | null = activeFocusTaskId, amount: number = 1) => {
     if (!tid) return;
     localLastUpdatedRef.current = Date.now();
+    hasLocalChangesRef.current = true;
     const today = new Date().toLocaleDateString('en-CA');
     setFocusHistory(prev => {
       const nextToday = { 
@@ -513,6 +533,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
 
   const handleToggleFocus = (tid: string | null) => {
     localLastUpdatedRef.current = Date.now();
+    hasLocalChangesRef.current = true;
     const sw = pins.find(p => p.type === 'stopwatch');
     
     // First, process any running time on the current task BEFORE swapping or pausing
@@ -720,6 +741,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                         activeTaskColor={activeTaskInfo?.color}
                         onFocusIncrement={handleFocusIncrement}
                         onDragStart={() => {}}
+                        onPinchStart={() => {}}
                         onBringToFront={bringToFront}
                         allPins={pins}
                       />
@@ -799,6 +821,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                               onClick={() => {
                                 setIsLocked(prev => {
                                   const next = !prev;
+                                  hasLocalChangesRef.current = true;
                                   masterStateRef.current.isLocked = next;
                                   localStorage.setItem('board-locked', String(next));
                                   return next;
@@ -830,6 +853,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                         <button onClick={() => {
                           setManualTheme(prev => {
                             const next = prev === 'dark' ? 'light' : 'dark';
+                            hasLocalChangesRef.current = true;
                             masterStateRef.current.manualTheme = next;
                             return next;
                           });
@@ -851,6 +875,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                                 key={t.name}
                                 onClick={() => {
                                   setBoardColor(t.color);
+                                  hasLocalChangesRef.current = true;
                                   masterStateRef.current.boardColor = t.color;
                                 }}
                                   className={`w-7 h-7 rounded-md border transition-all hover:scale-105 active:scale-95 flex items-center justify-center ${boardColor === t.color ? 'border-indigo-500 shadow-sm' : 'border-transparent'}`}
@@ -887,6 +912,7 @@ export function PinBoard({ boardId }: { boardId: string }) {
                             disabled={clearConfirmInput !== 'confirm'}
                             onClick={() => {
                               setPins([]);
+                              hasLocalChangesRef.current = true;
                               masterStateRef.current.pins = [];
                               setShowAddMenu(false);
                               setMenuView('main');

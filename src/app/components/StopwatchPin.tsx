@@ -52,7 +52,7 @@ function formatTime(totalSeconds: number) {
 }
 
 export function StopwatchPin({ 
-  pin, onUpdate, onDelete, onDragStart, isDragging = false, isDark, isLocked, isSelected, onSelect, onOpenInspector, onBringToFront, 
+  pin, onUpdate, onDelete, onDragStart, onPinchStart, isDragging = false, isDark, isLocked, isSelected, onSelect, onOpenInspector, onBringToFront, 
   onToggleFullscreen, isFullscreen = false, onToggleFocus, activeTaskId, activeTaskName, activeTaskColor, onFocusIncrement, allPins = [] 
 }: StopwatchPinProps) {
   const [isHovered, setIsHovered] = useState(false);

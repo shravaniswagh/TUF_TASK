@@ -40,7 +40,7 @@ function getContrastColor(hexColor?: string) {
 }
 
 export function WeeklyAnalysisPin({ 
-  pin, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, onBringToFront, weeklyData, focusHistory = {}, allPins = [] 
+  pin, onUpdate, onDelete, onDragStart, onPinchStart, onOpenInspector, isDragging, isDark, isLocked, isSelected, onSelect, onBringToFront, weeklyData, focusHistory = {}, allPins = [] 
 }: WeeklyAnalysisPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const pinHeadColor = PIN_HEAD_COLORS[pin.type] || '#6366F1';

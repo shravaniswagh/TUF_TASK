@@ -39,7 +39,7 @@ interface CalendarPinProps {
   onBringToFront: (id: string) => void;
 }
 
-export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, onBringToFront }: CalendarPinProps) {
+export function CalendarPin({ pin, boardId, onUpdate, onDelete, onDragStart, onPinchStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, onBringToFront }: CalendarPinProps) {
   const [isHovered, setIsHovered] = useState(false);
   const getContrastColor = (hex: string) => {
     const r = parseInt(hex.slice(1, 3), 16);

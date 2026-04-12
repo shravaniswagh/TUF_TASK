@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, PanelRightClose, PanelRightOpen } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import { CalendarGrid } from './CalendarGrid';
@@ -79,6 +79,7 @@ export function WallCalendar({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [isResizing, setIsResizing] = useState(false);
+  const hasLocalNoteChangesRef = useRef(false);
 
   // Calculate scrollbar color
   const scrollbarColor = darkenColor(backgroundColor, 15);
@@ -116,37 +117,38 @@ export function WallCalendar({
   // Use provided headerImage or default
   const displayImage = headerImage || exampleImage;
 
-  // Load notes from Firebase on mount
+  // Real-time Notes Sync
   useEffect(() => {
-    const fetchNotes = async () => {
-      setHasLoaded(false);
-      try {
-        const docSnap = await getDoc(doc(db, 'notes', boardId));
-        
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.notes) {
-            // Convert date strings back to Date objects
-            const notesWithDates = data.notes.map((note: any) => ({
-              ...note,
-              dateRange: {
-                start: note.dateRange.start ? new Date(note.dateRange.start) : null,
-                end: note.dateRange.end ? new Date(note.dateRange.end) : null,
-              },
-            }));
-            setNotes(notesWithDates);
-          }
-        } else {
-          setNotes([]); // Clear notes for a new board
-        }
-        setHasLoaded(true);
-      } catch (error) {
-        console.error('Failed to load notes:', error);
-        setHasLoaded(true);
-      }
-    };
+    setHasLoaded(false);
     
-    fetchNotes();
+    const unsubscribe = onSnapshot(doc(db, 'notes', boardId), (snapshot) => {
+      // SHIELD: Ignore our own updates to prevent infinite loops
+      if (snapshot.metadata.hasPendingWrites) return;
+
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        if (data.notes) {
+          const notesWithDates = data.notes.map((note: any) => ({
+            ...note,
+            dateRange: {
+              start: note.dateRange.start ? new Date(note.dateRange.start) : null,
+              end: note.dateRange.end ? new Date(note.dateRange.end) : null,
+            },
+          }));
+          
+          console.log('[SYNC] 📅 Calendar notes received.');
+          setNotes(notesWithDates);
+        }
+      } else {
+        setNotes([]);
+      }
+      setHasLoaded(true);
+    }, (error) => {
+      console.error('Notes snapshot error:', error);
+      setHasLoaded(true);
+    });
+    
+    return () => unsubscribe();
   }, [boardId]);
 
   // Save notes to Firebase whenever they change (debounced)
@@ -154,6 +156,12 @@ export function WallCalendar({
     if (!hasLoaded) return;
     
     const saveTimer = setTimeout(() => {
+      // ONLY SAVE IF WE HAVE LOCAL CHANGES
+      if (!hasLocalNoteChangesRef.current) {
+        console.log('[SAVE] 🧊 No note changes. Skipping write.');
+        return;
+      }
+
       // Convert Dates to ISO strings for Firestore storage
       const serializedNotes = notes.map(note => ({
         ...note,
@@ -163,7 +171,12 @@ export function WallCalendar({
         }
       }));
       
+      console.log('[SAVE] 📝 Syncing calendar notes to cloud...');
       setDoc(doc(db, 'notes', boardId), { notes: serializedNotes }, { merge: true })
+        .then(() => {
+          console.log('[SAVE] ✅ Success: Notes persistent.');
+          hasLocalNoteChangesRef.current = false;
+        })
         .catch(error => console.error('Failed to save notes:', error));
     }, 1000);
     
@@ -206,10 +219,12 @@ export function WallCalendar({
       monthYear: currentMonthYear,
       color,
     };
+    hasLocalNoteChangesRef.current = true;
     setNotes([...notes, newNote]);
   };
 
   const handleDeleteNote = (id: string) => {
+    hasLocalNoteChangesRef.current = true;
     setNotes(notes.filter(note => note.id !== id));
   };
 

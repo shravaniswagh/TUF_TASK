@@ -126,7 +126,7 @@ function darkenColor(hex: string, percent: number): string {
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 
-export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, activeFocusTaskId, onStartFocus, onBringToFront }: PinProps) {
+export function Pin({ pin, boardId, onUpdate, onDelete, onDragStart, onPinchStart, onOpenInspector, isDragging = false, isDark, isLocked, isSelected, onSelect, activeFocusTaskId, onStartFocus, onBringToFront }: PinProps) {
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [isEditingLabel, setIsEditingLabel] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
