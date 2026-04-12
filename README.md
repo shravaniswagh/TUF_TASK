@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="./preview.png" alt="TUF Event Calendar Preview" width="100%" style="border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);" />
 
   <h1>🗓️ Interactive Event Calendar & Pinboard</h1>
   
